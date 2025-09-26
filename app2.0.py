@@ -192,9 +192,14 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
     """
     計算公司的基本面評級 (FCF + ROE + P/E)。
     """
+    # 初始化詳細診斷訊息
+    fcf_diag = "N/A"
+    roe_diag = "N/A"
+    pe_diag = "N/A"
+
     results = {
         "FCF_Rating": 0.0, "ROE_Rating": 0.0, "PE_Rating": 0.0, 
-        "Combined_Rating": 0.0, "Message": ""
+        "Combined_Rating": 0.0, "Message": "", "FCF_Diag": fcf_diag, "ROE_Diag": roe_diag, "PE_Diag": pe_diag
     }
     
     # === 修正後的非個股/難以分析的資產豁免邏輯 ===
@@ -224,6 +229,7 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         # FCF 成長評級 (權重 0.4)
         cf = stock.cashflow
         fcf_cagr = -99 
+        fcf_diag = "數據不足或計算失敗。"
         if not cf.empty and len(cf.columns) >= 2:
             operating_cf = cf.loc['Operating Cash Flow'].dropna()
             capex = cf.loc['Capital Expenditure'].dropna().abs() 
@@ -231,6 +237,7 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
             num_periods = min(years, len(fcf)) - 1
             if len(fcf) >= 2 and fcf.iloc[-1] > 0 and fcf.iloc[0] > 0 and num_periods > 0:
                 fcf_cagr = ((fcf.iloc[0] / fcf.iloc[-1]) ** (1 / num_periods) - 1) * 100
+                fcf_diag = f"{years}年 FCF CAGR: {fcf_cagr:.2f}%。"
         
         if fcf_cagr >= 15: results["FCF_Rating"] = 1.0
         elif fcf_cagr >= 5: results["FCF_Rating"] = 0.7
@@ -239,14 +246,17 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         # ROE 資本回報效率評級 (權重 0.3)
         financials = stock.quarterly_financials
         roe_avg = 0 
+        roe_diag = "數據不足或計算失敗。"
         if not financials.empty and 'Net Income' in financials.index and 'Total Stockholder Equity' in financials.index:
             net_income = financials.loc['Net Income'].dropna()
             equity = financials.loc['Total Stockholder Equity'].dropna()
             roe_series = (net_income / equity).replace([np.inf, -np.inf], np.nan).dropna()
             if len(roe_series) >= 4:
                 roe_avg = roe_series[:4].mean() * 100 
+                roe_diag = f"近4季平均 ROE: {roe_avg:.2f}%。"
             elif len(roe_series) > 0:
                 roe_avg = roe_series[0] * 100
+                roe_diag = f"最新一季 ROE: {roe_avg:.2f}%。"
         
         if roe_avg >= 15: results["ROE_Rating"] = 1.0
         elif roe_avg >= 10: results["ROE_Rating"] = 0.7
@@ -254,15 +264,23 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         
         # P/E 估值評級 (權重 0.3)
         pe_ratio = stock.info.get('forwardPE') or stock.info.get('trailingPE')
+        pe_diag = f"PE (Forward/Trailing): {pe_ratio:.2f}。"
         if pe_ratio is not None and pe_ratio > 0:
             if pe_ratio < 15: results["PE_Rating"] = 1.0 
             elif pe_ratio < 25: results["PE_Rating"] = 0.7 
             else: results["PE_Rating"] = 0.3 
-        else: results["PE_Rating"] = 0.5 
+        else: 
+            results["PE_Rating"] = 0.5 
+            pe_diag = "PE 數據不可用，估值設為中性。"
 
         # 綜合評級
         results["Combined_Rating"] = (results["FCF_Rating"] * 0.4) + (results["ROE_Rating"] * 0.3) + (results["PE_Rating"] * 0.3)
         results["Message"] = f"FCF CAGR: {fcf_cagr:.2f}%. | 4季平均ROE: {roe_avg:.2f}%. | PE: {pe_ratio:.2f}."
+        
+        # 更新詳細診斷
+        results["FCF_Diag"] = fcf_diag
+        results["ROE_Diag"] = roe_diag
+        results["PE_Diag"] = pe_diag
         
     except Exception as e:
         results["Message"] = f"基本面計算失敗或無足夠數據: {e}"
@@ -317,7 +335,7 @@ def calculate_technical_indicators(df):
 
 # 🚩 數據處理緩存，保持穩定
 @st.cache_data(ttl=60) 
-def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_term: bool) -> dict:
+def generate_expert_fusion_signal(df: pd.DataFrame, fa_result: dict, is_long_term: bool) -> dict:
     """
     生成融合 FA/TA 的最終交易決策、信心度與風控參數。
     Score 範圍: [-10, 10]
@@ -338,6 +356,7 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     strategy_label = "TA 動能策略"
     expert_opinions = {}
     FA_THRESHOLD = 0.7 
+    fa_rating = fa_result['Combined_Rating']
     
     # === (A) 技術分析 TA Score (權重高) ===
     
@@ -345,10 +364,10 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     is_long_term_bull = latest.get('EMA_200', -1) > 0 and current_price > latest['EMA_200']
     if is_long_term_bull: 
         score += 4
-        expert_opinions['趨勢判斷 (EMA)'] = "長期牛市確立 (Price > EMA-200)"
+        expert_opinions['趨勢判斷 (EMA)'] = "🔴 長期牛市確立 (Price > EMA-200)"
     else:
         score = score - 1 # 趨勢不佳扣分
-        expert_opinions['趨勢判斷 (EMA)'] = "長期熊市/盤整"
+        expert_opinions['趨勢判斷 (EMA)'] = "🟢 長期熊市/盤整 (Price < EMA-200 或無數據)"
     
     # 2. MACD 動能轉折 (黃金/死亡交叉)
     macd_cross_buy = (latest['MACD_Line'] > latest['MACD_Signal']) and (previous['MACD_Line'] <= previous['MACD_Signal'])
@@ -356,31 +375,23 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
 
     if macd_cross_buy: 
         score += 3
-        expert_opinions['動能轉折 (MACD)'] = "MACD 黃金交叉 (買進信號)"
+        expert_opinions['動能轉折 (MACD)'] = "🔴 MACD 黃金交叉 (買進信號)"
     elif macd_cross_sell: 
         score -= 3
-        expert_opinions['動能轉折 (MACD)'] = "MACD 死亡交叉 (賣出信號)"
+        expert_opinions['動能轉折 (MACD)'] = "🟢 MACD 死亡交叉 (賣出信號)"
     elif latest['MACD_Hist'] > 0: 
         score += 1
-        expert_opinions['動能轉折 (MACD)'] = "動能柱持續增長 (> 0)"
+        expert_opinions['動能轉折 (MACD)'] = "🔴 動能柱持續增長 (> 0)"
     elif latest['MACD_Hist'] < 0: 
         score -= 1
-        expert_opinions['動能轉折 (MACD)'] = "動能柱持續減弱 (< 0)"
+        expert_opinions['動能轉折 (MACD)'] = "🟢 動能柱持續減弱 (< 0)"
         
-    # 3. RSI 超買超賣與動能強度
+    # 3. RSI 超買超賣與動能強度 (不單獨計入 expert_opinions，已合併至TA表)
     rsi = latest['RSI']
-    if rsi < 30: 
-        score += 2
-        expert_opinions['動能強度 (RSI)'] = "嚴重超賣 (潛在反彈)"
-    elif rsi > 70: 
-        score -= 2
-        expert_opinions['動能強度 (RSI)'] = "嚴重超買 (潛在回調)"
-    elif rsi > 55: 
-        score += 1
-        expert_opinions['動能強度 (RSI)'] = "強勢區間"
-    elif rsi < 45: 
-        score -= 1
-        expert_opinions['動能強度 (RSI)'] = "弱勢區間"
+    if rsi < 30: score += 2
+    elif rsi > 70: score -= 2
+    elif rsi > 55: score += 1
+    elif rsi < 45: score -= 1
     
     # === (B) 基本面 FA Score (僅長線有效，作為篩選器) ===
     
@@ -388,20 +399,20 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
         if fa_rating >= 0.9: 
             # 只有指數/ETF 才會到 1.0，給予最高加分
             score += 3 
-            expert_opinions['基本面驗證 (FA)'] = "FA 頂級評級，大幅強化多頭信心 (主要為指數/ETF)"
+            expert_opinions['基本面驗證 (FA)'] = "🔴 FA 頂級評級 (>=0.9)，大幅強化多頭信心"
         elif fa_rating >= FA_THRESHOLD: 
             # 正常美股個股可能達到此區間 (0.7 ~ 0.9)
             score += 1 
-            expert_opinions['基本面驗證 (FA)'] = "FA 良好評級，溫和強化多頭信心"
+            expert_opinions['基本面驗證 (FA)'] = "🔴 FA 良好評級 (>=0.7)，溫和強化多頭信心"
         elif fa_rating < FA_THRESHOLD and fa_rating > 0.6: 
             # FA 中性 (0.5)，不加分，但也不扣分，除非 TA 趨勢極差
-            expert_opinions['基本面驗證 (FA)'] = "FA 中性評級 (或數據不適用)，TA 獨立分析"
+            expert_opinions['基本面驗證 (FA)'] = "🟡 FA 中性評級 (0.5-0.7)，TA 獨立分析"
         elif fa_rating < FA_THRESHOLD and score > 0: 
             # FA 差 (低於 0.3)，且 TA 鼓勵買入，則削弱 TA 信號
             score = max(0, score - 2) 
-            expert_opinions['基本面驗證 (FA)'] = "FA 評級差，削弱 TA 買入信號"
+            expert_opinions['基本面驗證 (FA)'] = "🟢 FA 評級差 (<0.3)，削弱 TA 買入信號"
     else:
-        expert_opinions['基本面驗證 (FA)'] = "短期分析，FA 不參與計分"
+        expert_opinions['基本面驗證 (FA)'] = "🟡 短期分析，FA 不參與計分"
 
 
     # === (D) 最終決策與風控設定 ===
@@ -428,13 +439,19 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     
     confidence = np.clip(50 + score * 5, 30, 95) # 將分數轉換為信心度 (30%-95% 之間)
     
-    expert_opinions['最終策略與結論'] = f"{strategy_label}：{recommendation} (總量化分數: {score})"
+    # 修正專家意見，確保只顯示必要的四項 + 最終結論
+    final_expert_opinions = {
+        '趨勢判斷 (EMA)': expert_opinions.get('趨勢判斷 (EMA)', 'N/A'),
+        '動能轉折 (MACD)': expert_opinions.get('動能轉折 (MACD)', 'N/A'),
+        '基本面驗證 (FA)': expert_opinions.get('基本面驗證 (FA)', 'N/A'),
+        '最終策略與結論': f"{strategy_label}：{recommendation} (總量化分數: {score})"
+    }
     
     return {
         'recommendation': recommendation, 'confidence': confidence, 'score': score, 
         'current_price': current_price, 'entry_price': entry_suggestion, 
         'stop_loss': stop_loss, 'take_profit': take_profit, 'action': action, 
-        'atr': atr, 'strategy': strategy_label, 'expert_opinions': expert_opinions, 'action_color': action_color
+        'atr': atr, 'strategy': strategy_label, 'expert_opinions': final_expert_opinions, 'action_color': action_color
     }
 
 # ==============================================================================
@@ -618,7 +635,7 @@ def get_currency_symbol(symbol: str) -> str:
 
 def main():
     
-    st.title("🤖 專家級金融分析儀表板")
+    # 移除 st.title("🤖 專家級金融分析儀表板")
     st.markdown("### 🏆 **專業趨勢分析、雙核心策略**")
     st.markdown("---") 
 
@@ -717,7 +734,7 @@ def main():
                     fa_result = calculate_fundamental_rating(final_symbol_to_analyze)
                     analysis = generate_expert_fusion_signal(
                         df, 
-                        fa_rating=fa_result['Combined_Rating'], 
+                        fa_result=fa_result, # 傳入完整的 fa_result
                         is_long_term=is_long_term
                     )
                     
@@ -766,7 +783,6 @@ def main():
         price_delta_color = 'inverse' if change < 0 else 'normal'
 
         st.markdown(f"**分析週期:** **{selected_period_key}** | **FA 評級:** **{fa_result['Combined_Rating']:.2f}**")
-        st.markdown(f"**基本面診斷:** {fa_result['Message']}")
         st.markdown("---")
         
         st.subheader("💡 核心行動與量化評分")
@@ -827,13 +843,69 @@ def main():
         
         st.subheader("📊 關鍵技術指標數據與專業判讀 (交叉驗證細節)")
         
-        expert_df = pd.DataFrame(analysis['expert_opinions'].items(), columns=['專家領域', '判斷結果'])
-        expert_df.loc[len(expert_df)] = ['基本面 FCF/ROE/PE 診斷', fa_result['Message']]
+        # 準備 Expert Opinions 數據
+        expert_opinions_data = list(analysis['expert_opinions'].items())
         
+        # 增加基本面診斷的詳細行 (新的需求)
+        expert_opinions_data.append(('基本面 FCF/ROE/PE 診斷', fa_result.get('Message', 'N/A')))
+        expert_opinions_data.append(('FCF 診斷與驗證', fa_result.get('FCF_Diag', 'N/A')))
+        expert_opinions_data.append(('ROE 診斷與驗證', fa_result.get('ROE_Diag', 'N/A')))
+        expert_opinions_data.append(('PE 診斷與驗證', fa_result.get('PE_Diag', 'N/A')))
+        
+        expert_df = pd.DataFrame(expert_opinions_data, columns=['專家領域', '判斷結果'])
+
+        # 僅對核心 TA/FA 結果進行顏色標記
         def style_expert_opinion(s):
-            is_positive = s.str.contains('牛市|買進|多頭|強化|利多|增長|頂級|良好|潛在反彈|K線向上|正常波動性', case=False)
-            is_negative = s.str.contains('熊市|賣出|空頭|削弱|利空|下跌|不足|潛在回調|K線向下|極高波動性', case=False)
-            is_neutral = s.str.contains('盤整|警告|中性|觀望|趨勢發展中|不適用|不完整', case=False) 
+            # 專門針對前四項核心判斷做顏色標記 (趨勢, 動能, FA驗證, 結論)
+            is_positive = s.str.contains('🔴|買入|牛市|強化|頂級|良好', case=False)
+            is_negative = s.str.contains('🟢|賣出|熊市|削弱|評級差', case=False)
+            is_neutral = s.str.contains('🟡|觀望|中性|不適用', case=False) 
+            
+            colors = np.select(
+                [is_negative, is_positive, is_neutral],
+                ['color: #1e8449; font-weight: bold;', 'color: #cc0000; font-weight: bold;', 'color: #cc6600;'],
+                default='color: #888888;' # 其他詳細診斷使用灰色
+            )
+            return [f'background-color: transparent; {c}' for c in colors]
+
+        # 讓 FCF/ROE/PE 診斷的行使用預設顏色 (非粗體紅/綠)
+        # 僅對 '專家領域' 欄位是核心判斷的行套用顏色樣式
+        def apply_style_by_row_name(row):
+            styles = []
+            row_name = row['專家領域']
+            result_text = row['判斷結果']
+            
+            # 核心四項判斷
+            if row_name in ['趨勢判斷 (EMA)', '動能轉折 (MACD)', '基本面驗證 (FA)', '最終策略與結論']:
+                if '🔴' in result_text or '買入' in result_text or '牛市' in result_text:
+                    style = 'color: #cc0000; font-weight: bold;'
+                elif '🟢' in result_text or '賣出' in result_text or '熊市' in result_text:
+                    style = 'color: #1e8449; font-weight: bold;'
+                elif '🟡' in result_text or '觀望' in result_text:
+                    style = 'color: #cc6600;'
+                else:
+                    style = 'color: #888888;'
+            else:
+                # FCF/ROE/PE 診斷等詳細內容，使用預設顏色
+                style = 'color: #888888;'
+
+            for _ in row:
+                styles.append(style)
+            return styles
+        
+        # 由於 Streamlit Dataframe 樣式應用限制，直接使用 HTML/Markdown 提示替代複雜的 df.style
+        # 我們將使用一個單獨的、更清晰的表格來呈現核心意見，並將詳細的診斷放在下方。
+
+        # 核心判斷表格
+        core_expert_df = pd.DataFrame(
+            [expert_opinions_data[i] for i in range(4)], # 只取前四項核心判斷
+            columns=['專家領域', '判斷結果']
+        )
+        
+        def style_core_opinion(s):
+            is_positive = s.str.contains('🔴|買入|牛市|強化|頂級|良好', case=False)
+            is_negative = s.str.contains('🟢|賣出|熊市|削弱|評級差', case=False)
+            is_neutral = s.str.contains('🟡|觀望|中性|不適用', case=False) 
             
             colors = np.select(
                 [is_negative, is_positive, is_neutral],
@@ -842,19 +914,25 @@ def main():
             )
             return [f'background-color: transparent; {c}' for c in colors]
 
-        styled_expert_df = expert_df.style.apply(style_expert_opinion, subset=['判斷結果'], axis=0)
-
         st.dataframe(
-            styled_expert_df, 
+            core_expert_df.style.apply(style_core_opinion, subset=['判斷結果'], axis=0),
             use_container_width=True,
-            key=f"expert_df_{final_symbol_to_analyze}_{selected_period_key}",
+            hide_index=True,
+            key=f"core_expert_df_{final_symbol_to_analyze}_{selected_period_key}",
             column_config={
-                "專家領域": st.column_config.Column("專家領域", help="FA/TA 分析範疇"),
-                "判斷結果": st.column_config.Column("判斷結果", help="專家對該領域的量化判讀與結論"),
+                "專家領域": st.column_config.Column("核心分析項目", help="FA/TA 分析範疇"),
+                "判斷結果": st.column_config.Column("專家量化判讀與結論", help="基於數據的最終決策"),
             }
         )
         
-        st.caption("ℹ️ **設計師提示:** 判讀結果顏色：**紅色=多頭/強化信號** (類似低風險買入)，**綠色=空頭/削弱信號** (類似高風險賣出)，**橙色=中性/警告**。")
+        st.caption("ℹ️ **顏色提示:** **🔴 紅色=多頭/強化信號** (類似低風險買入)，**🟢 綠色=空頭/削弱信號** (類似高風險賣出)，**🟡 橙色=中性/警告**。")
+        
+        # 基本面詳細診斷
+        st.markdown("##### 🔬 基本面 FCF/ROE/PE 診斷來源與驗證")
+        st.markdown(f"**FA 綜合評級 (0-1.0):** `{fa_result['Combined_Rating']:.2f}`")
+        st.markdown(f"**自由現金流 (FCF) 診斷:** `{fa_result.get('FCF_Diag', 'N/A')}`")
+        st.markdown(f"**股東權益報酬率 (ROE) 診斷:** `{fa_result.get('ROE_Diag', 'N/A')}`")
+        st.markdown(f"**本益比 (P/E) 診斷:** `{fa_result.get('PE_Diag', 'N/A')}`")
 
         st.markdown("---")
         
