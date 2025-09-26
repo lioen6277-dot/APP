@@ -31,55 +31,40 @@ PERIOD_MAP = {
     "1 週 (長期)": ("max", "1wk")
 }
 
-# 🚀 您的【所有資產清單】(ALL_ASSETS_MAP) - 涵蓋美股、台股、加密貨幣、指數、ETF
-# 此清單已大幅擴展，以滿足使用者對「所有股票和加密貨幣」的需求。
-ALL_ASSETS_MAP = {
-    # ----------------------------------------------------
-    # A. 美股核心 (US Stocks) - 個股
-    # ----------------------------------------------------
-    "TSLA": {"name": "特斯拉", "keywords": ["特斯拉", "電動車", "TSLA", "Tesla"]},
-    "NVDA": {"name": "輝達", "keywords": ["輝達", "英偉達", "AI", "NVDA", "Nvidia"]},
-    "AAPL": {"name": "蘋果", "keywords": ["蘋果", "Apple", "AAPL"]},
-    "GOOGL": {"name": "谷歌/Alphabet", "keywords": ["谷歌", "Alphabet", "GOOGL", "GOOG"]},
-    "MSFT": {"name": "微軟", "keywords": ["微軟", "Microsoft", "MSFT"]},
-    "AMZN": {"name": "亞馬遜", "keywords": ["亞馬遜", "Amazon", "AMZN"]},
-    "META": {"name": "Meta/臉書", "keywords": ["臉書", "Meta", "FB", "META"]},
-    "NFLX": {"name": "網飛", "keywords": ["網飛", "Netflix", "NFLX"]},
-    "ADBE": {"name": "Adobe", "keywords": ["Adobe", "ADBE"]},
-    "CRM": {"name": "Salesforce", "keywords": ["Salesforce", "CRM"]},
-    "ORCL": {"name": "甲骨文", "keywords": ["甲骨文", "Oracle", "ORCL"]},
-    "COST": {"name": "好市多", "keywords": ["好市多", "Costco", "COST"]},
-    "JPM": {"name": "摩根大通", "keywords": ["摩根大通", "JPMorgan", "JPM"]},
-    "V": {"name": "Visa", "keywords": ["Visa", "V"]},
-    "WMT": {"name": "沃爾瑪", "keywords": ["沃爾瑪", "Walmart", "WMT"]},
-    "PG": {"name": "寶潔", "keywords": ["寶潔", "P&G", "PG"]},
-    "KO": {"name": "可口可樂", "keywords": ["可口可樂", "CocaCola", "KO"]},
-    "PEP": {"name": "百事", "keywords": ["百事", "Pepsi", "PEP"]},
-    "MCD": {"name": "麥當勞", "keywords": ["麥當勞", "McDonalds", "MCD"]},
-    "QCOM": {"name": "高通", "keywords": ["高通", "Qualcomm", "QCOM"]},
-    "INTC": {"name": "英特爾", "keywords": ["英特爾", "Intel", "INTC"]},
-    "AMD": {"name": "超微", "keywords": ["超微", "AMD"]},
-    "LLY": {"name": "禮來", "keywords": ["禮來", "EliLilly", "LLY"]},
-    "UNH": {"name": "聯合健康", "keywords": ["聯合健康", "UNH"]},
-    "HD": {"name": "家得寶", "keywords": ["家得寶", "HomeDepot", "HD"]},
-    "CAT": {"name": "開拓重工", "keywords": ["開拓重工", "Caterpillar", "CAT"]},
+# 🚀 您的【精確定義核心清單】(DEFAULT_SYMBOLS_MAP)
+DEFAULT_SYMBOLS_MAP = {
+    # 科技七巨頭 (按指定順序)
+    "TSLA": {"name": "特斯拉", "keywords": ["特斯拉", "電動車", "TSLA", "Tesla"], "yfinance_code": "TSLA"},
+    "NVDA": {"name": "輝達", "keywords": ["輝達", "英偉達", "AI", "NVDA", "Nvidia"], "yfinance_code": "NVDA"},
+    "AAPL": {"name": "蘋果", "keywords": ["蘋果", "Apple", "AAPL"], "yfinance_code": "AAPL"},
+    "GOOGL": {"name": "谷歌/Alphabet", "keywords": ["谷歌", "Alphabet", "GOOGL"], "yfinance_code": "GOOGL"},
+    # 補充其餘三巨頭，確保名稱解析完整
+    "MSFT": {"name": "微軟", "keywords": ["微軟", "Microsoft", "MSFT"], "yfinance_code": "MSFT"},
+    "AMZN": {"name": "亞馬遜", "keywords": ["亞馬遜", "Amazon", "AMZN"], "yfinance_code": "AMZN"},
+    "META": {"name": "Meta/臉書", "keywords": ["臉書", "Meta", "FB", "META"], "yfinance_code": "META"},
+    
+    # 台灣市場 (TW) - 按指定順序
+    "2330.TW": {"name": "台積電", "keywords": ["台積電", "2330", "TSMC"], "yfinance_code": "2330.TW"},
+    "2317.TW": {"name": "鴻海", "keywords": ["鴻海", "2317", "Foxconn"], "yfinance_code": "2317.TW"},
+    "2454.TW": {"name": "聯發科", "keywords": ["聯發科", "2454"], "yfinance_code": "2454.TW"},
+    "2308.TW": {"name": "台達電", "keywords": ["台達電", "2308", "Delta"], "yfinance_code": "2308.TW"},
+    
+    # 加密貨幣 - 修正為 yfinance 慣用的 -USD 格式
+    "BTC-USD": {"name": "比特幣", "keywords": ["比特幣", "BTC", "bitcoin", "BTC-USDT"], "yfinance_code": "BTC-USD"},
+    "ETH-USD": {"name": "以太坊", "keywords": ["以太坊", "ETH", "ethereum", "ETH-USDT"], "yfinance_code": "ETH-USD"},
+    "SOL-USD": {"name": "Solana", "keywords": ["Solana", "SOL", "SOL-USDT"], "yfinance_code": "SOL-USD"},
+    "BNB-USD": {"name": "幣安幣", "keywords": ["幣安幣", "BNB", "BNB-USDT"], "yfinance_code": "BNB-USD"},
+    "DOGE-USD": {"name": "狗狗幣", "keywords": ["狗狗幣", "DOGE", "DOGE-USDT"], "yfinance_code": "DOGE-USD"},
+}
 
-    # B. 美股指數/ETF (US Indices/ETFs)
-    "^GSPC": {"name": "S&P 500 指數", "keywords": ["標普", "S&P500", "^GSPC", "SPX"]},
-    "^IXIC": {"name": "NASDAQ 綜合指數", "keywords": ["納斯達克", "NASDAQ", "^IXIC"]},
-    "^DJI": {"name": "道瓊工業指數", "keywords": ["道瓊", "DowJones", "^DJI"]},
-    "SPY": {"name": "SPDR 標普500 ETF", "keywords": ["SPY", "標普ETF"]},
-    "QQQ": {"name": "Invesco QQQ Trust", "keywords": ["QQQ", "納斯達克ETF"]},
-    "VOO": {"name": "Vanguard 標普500 ETF", "keywords": ["VOO", "Vanguard"]},
 
-    # ----------------------------------------------------
-    # C. 台灣市場 (TW Stocks/ETFs/Indices)
-    # ----------------------------------------------------
+# 💡 專門用於【完整中文名稱補齊】的清單 (只放台灣熱門股，保持獨立)
+ALL_TW_SYMBOLS_MAPPING = {
     "2330.TW": {"name": "台積電", "keywords": ["台積電", "2330", "TSMC"]},
-    "2317.TW": {"name": "鴻海", "keywords": ["鴻海", "2317", "Foxconn"]},
-    "2454.TW": {"name": "聯發科", "keywords": ["聯發科", "2454", "MediaTek"]},
     "2308.TW": {"name": "台達電", "keywords": ["台達電", "2308", "Delta"]},
-    "3017.TW": {"name": "奇鋐", "keywords": ["奇鋐", "3017", "散熱"]},
+    "2454.TW": {"name": "聯發科", "keywords": ["聯發科", "2454"]},
+    "2317.TW": {"name": "鴻海", "keywords": ["鴻海", "2317", "Foxconn"]},
+    "3017.TW": {"name": "奇鋐", "keywords": ["奇鋐", "3017", "雙鴻"]},
     "3231.TW": {"name": "緯創", "keywords": ["緯創", "3231"]},
     "2382.TW": {"name": "廣達", "keywords": ["廣達", "2382"]},
     "2379.TW": {"name": "瑞昱", "keywords": ["瑞昱", "2379"]},
@@ -88,43 +73,24 @@ ALL_ASSETS_MAP = {
     "2603.TW": {"name": "長榮", "keywords": ["長榮", "2603", "航運"]},
     "2609.TW": {"name": "陽明", "keywords": ["陽明", "2609", "航運"]},
     "2615.TW": {"name": "萬海", "keywords": ["萬海", "2615", "航運"]},
-    "2891.TW": {"name": "中信金", "keywords": ["中信金", "2891"]},
-    "1101.TW": {"name": "台泥", "keywords": ["台泥", "1101"]},
-    "1301.TW": {"name": "台塑", "keywords": ["台塑", "1301"]},
-    "2357.TW": {"name": "華碩", "keywords": ["華碩", "2357"]},
     "0050.TW": {"name": "元大台灣50", "keywords": ["台灣50", "0050", "台灣五十"]},
     "0056.TW": {"name": "元大高股息", "keywords": ["高股息", "0056"]},
     "00878.TW": {"name": "國泰永續高股息", "keywords": ["00878", "國泰永續"]},
-    "^TWII": {"name": "台股指數", "keywords": ["台股指數", "加權指數", "^TWII"]},
-
-    # ----------------------------------------------------
-    # D. 加密貨幣 (Crypto)
-    # ----------------------------------------------------
-    "BTC-USD": {"name": "比特幣", "keywords": ["比特幣", "BTC", "bitcoin", "BTC-USDT"]},
-    "ETH-USD": {"name": "以太坊", "keywords": ["以太坊", "ETH", "ethereum", "ETH-USDT"]},
-    "SOL-USD": {"name": "Solana", "keywords": ["Solana", "SOL", "SOL-USDT"]},
-    "BNB-USD": {"name": "幣安幣", "keywords": ["幣安幣", "BNB", "BNB-USDT"]},
-    "DOGE-USD": {"name": "狗狗幣", "keywords": ["狗狗幣", "DOGE", "DOGE-USDT"]},
-    "XRP-USD": {"name": "瑞波幣", "keywords": ["瑞波幣", "XRP", "XRP-USDT"]},
-    "ADA-USD": {"name": "Cardano", "keywords": ["Cardano", "ADA", "ADA-USDT"]},
-    "AVAX-USD": {"name": "Avalanche", "keywords": ["Avalanche", "AVAX", "AVAX-USDT"]},
-    "DOT-USD": {"name": "Polkadot", "keywords": ["Polkadot", "DOT", "DOT-USDT"]},
-    "LINK-USD": {"name": "Chainlink", "keywords": ["Chainlink", "LINK", "LINK-USDT"]},
+    "00900.TW": {"name": "富邦特選高股息", "keywords": ["00900", "富邦特選"]},
+    "^TWII": {"name": "台股指數", "keywords": ["台股指數", "加權指數"]},
 }
 
-# FULL_SYMBOLS_MAP 現在使用完整的資產清單
-FULL_SYMBOLS_MAP = ALL_ASSETS_MAP
+# 合併清單以便於查詢，但保持原清單獨立
+FULL_SYMBOLS_MAP = {**DEFAULT_SYMBOLS_MAP, **ALL_TW_SYMBOLS_MAPPING}
 
 
 # ==============================================================================
 # 🎯 新增兩層選擇的類別與熱門選項映射 (基於 FULL_SYMBOLS_MAP)
 # ==============================================================================
 CATEGORY_MAP = {
-    # US Stocks & ETFs & Indices
-    "美股 (US) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if not (c.endswith(".TW") or c.endswith("-USD") or c.startswith("^TWII"))],
-    # Taiwan Stocks & ETFs & Index
-    "台股 (TW) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if c.endswith(".TW") or c.startswith("^TWII")],
-    # Crypto
+    # 邏輯: 美股 (無 .TW, 無 -USD, 無 ^); 台股 (有 .TW, 或 ^); 加密貨幣 (有 -USD)
+    "美股 (US) - 科技/個股/指數": [c for c in FULL_SYMBOLS_MAP.keys() if not (c.endswith(".TW") or c.endswith("-USD") or c.startswith("^"))],
+    "台股 (TW) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if c.endswith(".TW") or c.startswith("^")],
     "加密貨幣 (Crypto)": [c for c in FULL_SYMBOLS_MAP.keys() if c.endswith("-USD")],
 }
 
@@ -144,7 +110,7 @@ for category, codes in CATEGORY_MAP.items():
 def get_symbol_from_query(query: str) -> str:
     """
     🎯 進化後的代碼解析函數：
-    同時檢查 FULL_SYMBOLS_MAP
+    同時檢查 DEFAULT_SYMBOLS_MAP 和 ALL_TW_SYMBOLS_MAPPING (透過 FULL_SYMBOLS_MAP)
     """
     
     query = query.strip()
@@ -157,6 +123,8 @@ def get_symbol_from_query(query: str) -> str:
             return code
             
         # 檢查英文關鍵詞 (TSMC, BNB, BTC-USDT)
+        # 💡 注意: 由於 FULL_SYMBOLS_MAP 已經包含最新的 keywords, 
+        # 即使輸入 BTC-USDT, 也會正確解析為 BTC-USD (標準代碼)
         if any(query_upper == kw.upper() for kw in data["keywords"]):
             return code # 返回 FULL_SYMBOLS_MAP 中的標準代碼
 
@@ -372,7 +340,7 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     Score 範圍: [-10, 10]
     """
     if df.empty or len(df) < 2:
-        return {'recommendation': "數據不足，觀望", 'confidence': 50, 'score': 0, 'action': "觀望", 'atr': 0, 'entry_price': 0, 'stop_loss': 0, 'take_profit': 0, 'strategy': "N/A", 'expert_opinions': {}, 'current_price': 0, 'action_color': 'orange'}
+        return {'recommendation': "數據不足，觀望", 'confidence': 50, 'score': 0, 'action': "觀望", 'atr': 0, 'entry_price': 0, 'stop_loss': 0, 'take_profit': 0, 'strategy': "N/A", 'expert_opinions': {}}
 
     latest = df.iloc[-1]
     previous = df.iloc[-2]
