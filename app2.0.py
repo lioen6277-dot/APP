@@ -765,7 +765,8 @@ def main():
     
     # --- 5. 開始分析 (Button) ---
     st.sidebar.markdown("5. **開始分析**")
-    analyze_button_clicked = st.sidebar.button("📊 執行專家分析", type="primary", key="main_analyze_button") 
+    # 🚩 修正點 1: 將按鈕文字修正為「執行AI分析」
+    analyze_button_clicked = st.sidebar.button("📊 執行AI分析", type="primary", key="main_analyze_button") 
 
     # === 主要分析邏輯 (Main Analysis Logic) ===
     if analyze_button_clicked or st.session_state['analyze_trigger']:
@@ -980,7 +981,8 @@ def main():
     
     # 首次載入或數據未準備好時的提示
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
-         st.info("請在左側選擇或輸入標的，然後點擊 **『執行專家分析』** 開始。")
+         # 🚩 修正點 2: 同步更新提示文字
+         st.info("請在左側選擇或輸入標的，然後點擊 **『執行AI分析』** 開始。")
 
 
 if __name__ == '__main__':
