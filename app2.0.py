@@ -667,8 +667,8 @@ def get_currency_symbol(symbol: str) -> str:
 
 def main():
     
-    # 🚩 關鍵修正：將主標題替換為自定義 HTML 樣式的 st.markdown 以達到「放大」效果
-    st.markdown("<h1 style='text-align: center; color: #cc0000; font-size: 3.5em; padding-bottom: 0.5em;'>🤖 AI趨勢分析📈</h1>", unsafe_allow_html=True)
+    # 🚩 關鍵修正：將主標題替換為自定義 HTML 樣式的 st.markdown 以達到「放大」效果，並使用淡橙色 (#FFA07A)
+    st.markdown("<h1 style='text-align: center; color: #FFA07A; font-size: 3.5em; padding-bottom: 0.5em;'>🤖 AI趨勢分析📈</h1>", unsafe_allow_html=True)
     st.markdown("---") 
 
     # 🚩 關鍵修正：會話狀態初始化，用於控制渲染
@@ -992,5 +992,5 @@ if __name__ == '__main__':
     main()
     
     st.markdown("---")
-    st.markdown("⚠️ **免責聲明:** 本分析模型包含多位專家的量化觀點，**僅供參考用途**。投資涉及風險，所有交易決策應基於您的獨立研究與財務狀況，並建議諮詢專業金融顧問。")
+    st.markdown("⚠️ **免責聲明:** 本分析模型包含多位專家的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
     st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
