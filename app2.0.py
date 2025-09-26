@@ -687,8 +687,8 @@ def update_search_input():
 
 def main():
     
-    # 移除 st.title("🤖 專家級金融分析儀表板")
-    st.markdown("### 🏆 **專業趨勢分析、雙核心策略**")
+    # 🏆 專業趨勢分析、雙核心策略改成 🤖 AI趨勢分析
+    st.markdown("### 🤖 **AI趨勢分析**")
     st.markdown("---") 
 
     # 🚩 關鍵修正：會話狀態初始化，用於控制渲染 (初始化 sidebar_search_input)
@@ -908,7 +908,7 @@ def main():
         st.info(f"**💡 策略總結:** **{analysis['strategy']}** | **⚖️ 風險/回報比 (R:R):** **{risk_reward:.2f}** | **波動單位 (ATR):** {analysis.get('atr', 0):.6f}")
         
         st.markdown("---")
-        
+
         st.subheader("📊 關鍵技術指標數據與專業判讀 (交叉驗證細節)")
         
         # 準備 Expert Opinions 數據
@@ -1007,6 +1007,7 @@ if __name__ == '__main__':
 
     main()
     
+    # ⚠️ 免責聲明: 修正後的精簡版本
     st.markdown("---")
-    st.markdown("⚠️ **免責聲明:** 本分析模型包含多位專家的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
+    st.markdown("⚠️ **免責聲明:** 本分析模型包含多位專家的量化觀點，**僅供參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
     st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
