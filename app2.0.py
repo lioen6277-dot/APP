@@ -182,6 +182,17 @@ def get_company_info(symbol):
         return {'name': symbol, 'sector': 'N/A', 'market_cap': 0, 'pe_ratio': 'N/A'}
 
 
+def get_currency_symbol(symbol: str) -> str:
+    """✅ 根據代碼判斷貨幣符號。"""
+    symbol = symbol.upper()
+    if symbol.endswith('.TW') or symbol.endswith('.TWO') or symbol.endswith('.HK'):
+        return "NT$" # 為了簡化，將 TW/HK 統一看作台幣符號（雖然不嚴謹，但避免 Symbol 太多）
+    elif '-USD' in symbol:
+        return "$" # 加密貨幣也用 $ 符號
+    else:
+        return "$" # 默認為美元
+
+
 # ==============================================================================
 # 3. 核心分析函數 (FA + TA 策略)
 # ==============================================================================
@@ -341,7 +352,7 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_result: dict, is_long_ter
     Score 範圍: [-10, 10]
     """
     if df.empty or len(df) < 2:
-        return {'recommendation': "數據不足，觀望", 'confidence': 50, 'score': 0, 'action': "觀望", 'atr': 0, 'entry_price': 0, 'stop_loss': 0, 'take_profit': 0, 'strategy': "N/A", 'expert_opinions': {}}
+        return {'recommendation': "數據不足，觀望", 'confidence': 50, 'score': 0, 'action': "觀望", 'atr': 0, 'entry_price': 0, 'stop_loss': 0, 'take_profit': 0, 'strategy': "N/A", 'expert_opinions': {}, 'action_color': 'orange'}
 
     latest = df.iloc[-1]
     previous = df.iloc[-2]
@@ -618,7 +629,7 @@ def create_comprehensive_chart(df, symbol, period):
     return fig
 
 # ==============================================================================
-# 7. Streamlit 回調函數 (Callbacks) - 新增區域
+# 7. Streamlit 回調函數 (Callbacks)
 # ==============================================================================
 
 def update_search_input():
@@ -748,7 +759,7 @@ def main():
                 else:
                     # 數據獲取成功，開始分析
                     company_info = get_company_info(final_symbol_to_analyze) 
-                    currency_symbol = get_currency_symbol(final_symbol_to_analyze) 
+                    currency_symbol = get_currency_symbol(final_symbol_to_analyze) # ✅ 修正: 現在 get_currency_symbol 已定義
                     
                     df = calculate_technical_indicators(df) 
                     fa_result = calculate_fundamental_rating(final_symbol_to_analyze)
