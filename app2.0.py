@@ -17,6 +17,9 @@ warnings.filterwarnings('ignore')
 # 1. 頁面配置與全局設定
 # ==============================================================================
 
+# 🎯 新增設定：隱藏右上角的開發者菜單 (包括查看原始碼)
+st.set_option("client.toolbarMode", "viewer")
+
 st.set_page_config(
     page_title="🤖 專家級金融分析儀表板", 
     page_icon="📈", 
@@ -599,7 +602,7 @@ def create_comprehensive_chart(df, symbol, period):
 
 
 # ==============================================================================
-# 6. Streamlit 應用程式主體 (Main App Logic) - 【修正版本】
+# 6. Streamlit 應用程式主體 (Main App Logic)
 # ==============================================================================
 
 def get_currency_symbol(symbol: str) -> str:
@@ -612,26 +615,6 @@ def get_currency_symbol(symbol: str) -> str:
     # 可以擴展其他市場，例如：elif symbol.endswith('.HK'): return 'HK$'
     return '$'
 
-# 🚩 核心修正：Selectbox 變動處理函數
-def handle_quick_select_change():
-    """當快速選擇下拉選單變更時，強制同步 text_input 的狀態並觸發分析。"""
-    # 從 selectbox 的 key 獲取選擇的顯示名稱
-    selected_display = st.session_state.get('quick_select_key')
-    
-    # 確保只處理有效的選項
-    if selected_display and "---" not in selected_display:
-        try:
-            # 找到對應的代碼
-            selected_code = HOT_OPTIONS_CODE[HOT_OPTIONS_DISPLAY.index(selected_display)]
-            
-            # 強制覆蓋 text_input 的 Session State (解決用戶手動輸入鎖定的問題)
-            st.session_state['sidebar_search_input'] = selected_code
-            # 觸發分析
-            st.session_state['analyze_trigger'] = True
-            st.session_state['data_ready'] = False
-        except ValueError:
-             # 如果是分隔線或無效選項，不做任何事
-             pass
 
 def main():
     
@@ -643,43 +626,50 @@ def main():
     if 'last_search_symbol' not in st.session_state: st.session_state['last_search_symbol'] = "2330.TW" 
     if 'analyze_trigger' not in st.session_state: st.session_state['analyze_trigger'] = False
     if 'data_ready' not in st.session_state: st.session_state['data_ready'] = False
-    # ❗ 新增：初始化文字輸入欄位的 Session State，且用於存儲和顯示
-    if 'sidebar_search_input' not in st.session_state: 
-        st.session_state['sidebar_search_input'] = st.session_state['last_search_symbol']
+
 
     st.sidebar.header("⚙️ 分析設定")
     
     # 根據新的 DEFAULT_HOT_OPTIONS 重新設定預設選項
     default_select_index = 0
-    try:
-        if st.session_state['last_search_symbol'] in HOT_OPTIONS_CODE:
-            default_select_index = HOT_OPTIONS_CODE.index(st.session_state['last_search_symbol'])
-    except ValueError:
-        default_select_index = 0
+    if st.session_state['last_search_symbol'] == "BTC-USD":
+         try: default_select_index = HOT_OPTIONS_CODE.index("BTC-USD")
+         except ValueError: default_select_index = 0
+    elif st.session_state['last_search_symbol'] == "2330.TW":
+         try: default_select_index = HOT_OPTIONS_CODE.index("2330.TW")
+         except ValueError: default_select_index = 0
     
-    # 🚩 修正 Selectbox：新增 key 和 on_change 呼叫
     selected_option = st.sidebar.selectbox(
         "🚀 快速選擇熱門標的",
         HOT_OPTIONS_DISPLAY,
-        index=default_select_index,
-        key="quick_select_key", # 新增 key
-        on_change=handle_quick_select_change # 新增 callback
+        index=default_select_index
     )
-    
-    # 🚩 修正 Text Input： value 參數直接使用 Session State 的值 (由 callback 同步)
-    # 這樣確保了無論是下拉選單選擇或用戶手動輸入，都以 'sidebar_search_input' 為準。
+
+    symbol_from_quick_select = None
+    if selected_option != HOT_OPTIONS_DISPLAY[0] and "---" not in selected_option:
+        symbol_from_quick_select = HOT_OPTIONS_CODE[HOT_OPTIONS_DISPLAY.index(selected_option)]
+
+
+    text_input_default = symbol_from_quick_select if symbol_from_quick_select else st.session_state.get('last_search_symbol', "2330.TW")
+
     selected_query = st.sidebar.text_input(
         "🔍 輸入股票代碼或中文名稱", 
         placeholder="例如：AAPL, 台積電, 廣達, BTC-USD", 
-        value=st.session_state['sidebar_search_input'],
-        key="sidebar_search_input" # key 會在用戶輸入時自動更新 st.session_state['sidebar_search_input']
+        value=text_input_default,
+        key="sidebar_search_input"
     )
     
-    # 取得最終要分析的代碼 (總是從 Session State 中取得，確保一致性)
-    final_symbol_to_analyze = get_symbol_from_query(st.session_state['sidebar_search_input'])
+    final_symbol_to_analyze = get_symbol_from_query(selected_query)
     
-    # ❗ 移除舊的 is_symbol_changed 自動觸發邏輯 (現在由 selectbox callback 處理)
+    is_symbol_changed = final_symbol_to_analyze != st.session_state.get('last_search_symbol', "INIT")
     
+    # 當代碼變更時，觸發分析，並重設資料準備狀態
+    if is_symbol_changed:
+        if final_symbol_to_analyze and final_symbol_to_analyze != "---": 
+            st.session_state['analyze_trigger'] = True
+            st.session_state['last_search_symbol'] = final_symbol_to_analyze
+            st.session_state['data_ready'] = False
+
     
     st.sidebar.markdown("---")
     
@@ -697,12 +687,9 @@ def main():
     # === 主要分析邏輯 (Main Analysis Logic) ===
     if analyze_button_clicked or st.session_state['analyze_trigger']:
         
-        # 🚩 啟動分析時，重設狀態
+        # 🚩 關鍵修正：啟動分析時，將數據準備狀態設為 False
         st.session_state['data_ready'] = False
         st.session_state['analyze_trigger'] = False 
-        
-        # 🚩 確保 last_search_symbol 跟著更新
-        st.session_state['last_search_symbol'] = final_symbol_to_analyze
         
         try:
             with st.spinner(f"🔍 正在啟動顧問團，獲取並分析 **{final_symbol_to_analyze}** 的數據 ({selected_period_key})..."):
