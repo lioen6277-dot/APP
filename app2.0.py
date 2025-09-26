@@ -192,6 +192,26 @@ def get_currency_symbol(symbol: str) -> str:
     else:
         return "$" # 默認為美元
 
+def get_price_precision(price: float) -> int:
+    """
+    ✅ 根據價格大小動態決定顯示的小數點位數，以確保加密貨幣的精確度。
+    """
+    if price is None or price == 0:
+        return 2
+    
+    # 價格 > $100 (高價股，如美股/台股) -> 2位
+    if price >= 100:
+        return 2
+    # 價格 $1 ~ $100 (中價股/一般加密幣) -> 3位
+    elif price >= 1:
+        return 3
+    # 價格 $0.01 ~ $1 (低價股/DOGE等級加密幣) -> 4位
+    elif price >= 0.01:
+        return 4
+    # 價格 < $0.01 (超低價加密幣，如 SHIB) -> 6位
+    else:
+        return 6
+
 
 # ==============================================================================
 # 3. 核心分析函數 (FA + TA 策略)
@@ -481,6 +501,9 @@ def get_technical_data_df(df):
     latest = df.iloc[-1]
     close = latest.get('Close', np.nan)
     
+    # 獲取價格顯示的精確度 (用來格式化最新值)
+    price_precision = get_price_precision(close)
+    
     indicators = {
         'RSI (14)': latest.get('RSI', np.nan),
         'ADX (14)': latest.get('ADX', np.nan),
@@ -532,7 +555,8 @@ def get_technical_data_df(df):
                     if volatility_ratio > 0.05: status, color = "🟢 極高波動性 (高風險)", "green" 
                     elif volatility_ratio > 0.025: status, color = "🟡 高波動性 (警告)", "orange"
                     else: status, color = "🔴 正常波動性 (低風險)", "red" 
-                    display_val = f"{value:.3f}"
+                    # 💡 修正: ATR 使用動態或固定高精確度顯示
+                    display_val = f"{value:.{max(4, price_precision)}f}" 
         
         elif name == 'EMA (5/200)':
             ema5, ema200 = value['ema5'], value['ema200']
@@ -541,7 +565,7 @@ def get_technical_data_df(df):
                 if close > ema200 and ema5 > ema200: status, color = "🔴 長期牛市趨勢確立", "red"
                 elif close < ema200 and ema5 < ema200: status, color = "🟢 長期熊市趨勢確立", "green"
                 else: status, color = "🟡 趨勢不明/轉換中", "orange"
-                display_val = f"{ema5:.2f} / {ema200:.2f}"
+                display_val = f"{ema5:.{price_precision}f} / {ema200:.{price_precision}f}"
         elif name == 'KD (K/D)':
             k, d = value['k'], value['d']
             if not pd.isna(k) and not pd.isna(d):
@@ -672,7 +696,7 @@ def main():
     if 'analyze_trigger' not in st.session_state: st.session_state['analyze_trigger'] = False
     if 'data_ready' not in st.session_state: st.session_state['data_ready'] = False
     # 🎯 修正: 初始化 Text Input 的 state，確保下次 RERUN 時，text input 的值是正確的
-    if 'sidebar_search_input' not in st.session_state: st.session_state['sidebar_search_input'] = st.session_state['last_search_symbol']
+    if 'sidebar_search_input' not in st.session_state: st.session_state['sidebar_search_input'] = st.session_state.get('last_search_symbol', "2330.TW")
 
 
     st.sidebar.header("⚙️ 分析設定")
@@ -759,7 +783,7 @@ def main():
                 else:
                     # 數據獲取成功，開始分析
                     company_info = get_company_info(final_symbol_to_analyze) 
-                    currency_symbol = get_currency_symbol(final_symbol_to_analyze) # ✅ 修正: 現在 get_currency_symbol 已定義
+                    currency_symbol = get_currency_symbol(final_symbol_to_analyze) 
                     
                     df = calculate_technical_indicators(df) 
                     fa_result = calculate_fundamental_rating(final_symbol_to_analyze)
@@ -812,6 +836,9 @@ def main():
         change_pct = (change / prev_close) * 100 if prev_close != 0 else 0
         
         price_delta_color = 'inverse' if change < 0 else 'normal'
+        
+        # 💡 新增：獲取動態價格精確度
+        price_precision = get_price_precision(current_price)
 
         st.markdown(f"**分析週期:** **{selected_period_key}** | **FA 評級:** **{fa_result['Combined_Rating']:.2f}**")
         st.markdown("---")
@@ -838,7 +865,13 @@ def main():
         col_core_1, col_core_2, col_core_3, col_core_4 = st.columns(4)
         
         with col_core_1: 
-            st.metric("💰 當前價格", f"{currency_symbol}{current_price:,.2f}", f"{change:+.2f} ({change_pct:+.2f}%)", delta_color=price_delta_color)
+            # 🎯 修正：使用動態精確度格式化
+            st.metric(
+                "💰 當前價格", 
+                f"{currency_symbol}{current_price:,.{price_precision}f}", 
+                f"{change:+.{price_precision}f} ({change_pct:+.2f}%)", 
+                delta_color=price_delta_color
+            )
         
         with col_core_2: 
             st.markdown("**🎯 最終行動建議**")
@@ -862,13 +895,17 @@ def main():
         with col_strat_1:
             st.markdown(f"**建議操作:** <span class='{action_class}' style='font-size: 18px;'>**{analysis['action']}**</span>", unsafe_allow_html=True)
         with col_strat_2:
-            st.markdown(f"**建議進場價:** <span style='color:#cc6600;'>**{currency_symbol}{analysis['entry_price']:.2f}**</span>", unsafe_allow_html=True)
+            # 🎯 修正：使用動態精確度格式化
+            st.markdown(f"**建議進場價:** <span style='color:#cc6600;'>**{currency_symbol}{analysis['entry_price']:.{price_precision}f}**</span>", unsafe_allow_html=True)
         with col_strat_3:
-            st.markdown(f"**🚀 止盈價 (TP):** <span style='color:red;'>**{currency_symbol}{analysis['take_profit']:.2f}**</span>", unsafe_allow_html=True)
+            # 🎯 修正：使用動態精確度格式化
+            st.markdown(f"**🚀 止盈價 (TP):** <span style='color:red;'>**{currency_symbol}{analysis['take_profit']:.{price_precision}f}**</span>", unsafe_allow_html=True)
         with col_strat_4:
-            st.markdown(f"**🛑 止損價 (SL):** <span style='color:green;'>**{currency_symbol}{analysis['stop_loss']:.2f}**</span>", unsafe_allow_html=True)
+            # 🎯 修正：使用動態精確度格式化
+            st.markdown(f"**🛑 止損價 (SL):** <span style='color:green;'>**{currency_symbol}{analysis['stop_loss']:.{price_precision}f}**</span>", unsafe_allow_html=True)
             
-        st.info(f"**💡 策略總結:** **{analysis['strategy']}** | **⚖️ 風險/回報比 (R:R):** **{risk_reward:.2f}** | **波動單位 (ATR):** {analysis.get('atr', 0):.4f}")
+        # 💡 修正: ATR 使用固定高精確度顯示，以確保微小波動的清晰度
+        st.info(f"**💡 策略總結:** **{analysis['strategy']}** | **⚖️ 風險/回報比 (R:R):** **{risk_reward:.2f}** | **波動單位 (ATR):** {analysis.get('atr', 0):.6f}")
         
         st.markdown("---")
         
@@ -966,7 +1003,7 @@ if __name__ == '__main__':
     if 'data_ready' not in st.session_state:
         st.session_state['data_ready'] = False
     if 'sidebar_search_input' not in st.session_state:
-        st.session_state['sidebar_search_input'] = st.session_state['last_search_symbol']
+        st.session_state['sidebar_search_input'] = st.session_state.get('last_search_symbol', "2330.TW")
 
     main()
     
