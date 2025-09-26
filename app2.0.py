@@ -617,21 +617,38 @@ def create_comprehensive_chart(df, symbol, period):
     fig.update_yaxes(title_text="成交量", row=5, col=1)
     return fig
 
+# ==============================================================================
+# 7. Streamlit 回調函數 (Callbacks) - 新增區域
+# ==============================================================================
+
+def update_search_input():
+    """
+    當快速選擇下拉選單改變時，自動更新搜尋欄位的代碼，並在下次 RERUN 時觸發分析。
+    """
+    # 讀取 Selectbox 的當前值 (顯示文字，e.g., "TSLA - 特斯拉")
+    selected_option_display = st.session_state.quick_select_box
+    
+    # 找出對應的代碼 (e.g., "TSLA")
+    if selected_option_display and selected_option_display != HOT_OPTIONS_DISPLAY[0] and "---" not in selected_option_display:
+        try:
+            index = HOT_OPTIONS_DISPLAY.index(selected_option_display)
+            code = HOT_OPTIONS_CODE[index]
+            
+            # 1. 設置 Text Input 的值 (使用 Text Input 的 key)
+            st.session_state.sidebar_search_input = code
+            
+            # 2. 強制設置 analyze_trigger 為 True，確保代碼改變後分析被觸發
+            if st.session_state.get('last_search_symbol') != code:
+                st.session_state.last_search_symbol = code
+                st.session_state.analyze_trigger = True
+        except ValueError:
+            # 如果選中的是分隔線或無效選項，忽略
+            pass
+
 
 # ==============================================================================
 # 6. Streamlit 應用程式主體 (Main App Logic)
 # ==============================================================================
-
-def get_currency_symbol(symbol: str) -> str:
-    """根據代碼返回貨幣符號。"""
-    if symbol.endswith('.TW'):
-        return 'NT$'
-    elif symbol.endswith('-USD') or not any(ext in symbol for ext in ['.TW', '.HK', '.SS', '.L']):
-        # 預設為美元 (適用於美股和加密貨幣)
-        return '$'
-    # 可以擴展其他市場，例如：elif symbol.endswith('.HK'): return 'HK$'
-    return '$'
-
 
 def main():
     
@@ -639,48 +656,51 @@ def main():
     st.markdown("### 🏆 **專業趨勢分析、雙核心策略**")
     st.markdown("---") 
 
-    # 🚩 關鍵修正：會話狀態初始化，用於控制渲染
+    # 🚩 關鍵修正：會話狀態初始化，用於控制渲染 (初始化 sidebar_search_input)
     if 'last_search_symbol' not in st.session_state: st.session_state['last_search_symbol'] = "2330.TW" 
     if 'analyze_trigger' not in st.session_state: st.session_state['analyze_trigger'] = False
     if 'data_ready' not in st.session_state: st.session_state['data_ready'] = False
+    # 🎯 修正: 初始化 Text Input 的 state，確保下次 RERUN 時，text input 的值是正確的
+    if 'sidebar_search_input' not in st.session_state: st.session_state['sidebar_search_input'] = st.session_state['last_search_symbol']
 
 
     st.sidebar.header("⚙️ 分析設定")
     
-    # 根據新的 DEFAULT_HOT_OPTIONS 重新設定預設選項
-    default_select_index = 0
-    if st.session_state['last_search_symbol'] == "BTC-USD":
-         try: default_select_index = HOT_OPTIONS_CODE.index("BTC-USD")
-         except ValueError: default_select_index = 0
-    elif st.session_state['last_search_symbol'] == "2330.TW":
-         try: default_select_index = HOT_OPTIONS_CODE.index("2330.TW")
-         except ValueError: default_select_index = 0
+    # 根據 session state 中的代碼，找出下拉選單中對應的索引作為預設值
+    current_symbol_code = st.session_state.get('last_search_symbol', "2330.TW")
+    try:
+        default_select_index = HOT_OPTIONS_CODE.index(current_symbol_code)
+    except ValueError:
+        default_select_index = 0 # 找不到就使用第一個選項 (提示)
     
-    selected_option = st.sidebar.selectbox(
+    # 🎯 修正: 使用 key 和 on_change 綁定下拉選單
+    st.sidebar.selectbox(
         "🚀 快速選擇熱門標的",
         HOT_OPTIONS_DISPLAY,
-        index=default_select_index
+        index=default_select_index,
+        key="quick_select_box", # 綁定 Selectbox 的 key
+        on_change=update_search_input # 新增回調函數
     )
 
-    symbol_from_quick_select = None
-    if selected_option != HOT_OPTIONS_DISPLAY[0] and "---" not in selected_option:
-        symbol_from_quick_select = HOT_OPTIONS_CODE[HOT_OPTIONS_DISPLAY.index(selected_option)]
+    # 1. 確保 Text Input 的預設值是 Session State 中的最新值 (可能是由 callback 更新的)
+    text_input_current_value = st.session_state.get('sidebar_search_input', st.session_state.get('last_search_symbol', "2330.TW"))
 
-
-    text_input_default = symbol_from_quick_select if symbol_from_quick_select else st.session_state.get('last_search_symbol', "2330.TW")
-
+    # 🎯 修正: 保持 Text Input 的 key，並使用 state 中的值作為 value
     selected_query = st.sidebar.text_input(
         "🔍 輸入股票代碼或中文名稱", 
         placeholder="例如：AAPL, 台積電, 廣達, BTC-USD", 
-        value=text_input_default,
-        key="sidebar_search_input"
+        value=text_input_current_value,
+        key="sidebar_search_input" # 綁定 Text Input 的 key
     )
     
+    # 最終分析代碼總是來自 Text Input 的結果
     final_symbol_to_analyze = get_symbol_from_query(selected_query)
     
+    # 檢查 Text Input 的值是否發生了變化 (無論是手動輸入還是下拉選單回傳)
     is_symbol_changed = final_symbol_to_analyze != st.session_state.get('last_search_symbol', "INIT")
     
     # 當代碼變更時，觸發分析，並重設資料準備狀態
+    # 這裡的邏輯必須保持：確保每一次代碼改變都會設置 analyze_trigger
     if is_symbol_changed:
         if final_symbol_to_analyze and final_symbol_to_analyze != "---": 
             st.session_state['analyze_trigger'] = True
@@ -846,56 +866,6 @@ def main():
         # 準備 Expert Opinions 數據
         expert_opinions_data = list(analysis['expert_opinions'].items())
         
-        # 增加基本面診斷的詳細行 (新的需求)
-        expert_opinions_data.append(('基本面 FCF/ROE/PE 診斷', fa_result.get('Message', 'N/A')))
-        expert_opinions_data.append(('FCF 診斷與驗證', fa_result.get('FCF_Diag', 'N/A')))
-        expert_opinions_data.append(('ROE 診斷與驗證', fa_result.get('ROE_Diag', 'N/A')))
-        expert_opinions_data.append(('PE 診斷與驗證', fa_result.get('PE_Diag', 'N/A')))
-        
-        expert_df = pd.DataFrame(expert_opinions_data, columns=['專家領域', '判斷結果'])
-
-        # 僅對核心 TA/FA 結果進行顏色標記
-        def style_expert_opinion(s):
-            # 專門針對前四項核心判斷做顏色標記 (趨勢, 動能, FA驗證, 結論)
-            is_positive = s.str.contains('🔴|買入|牛市|強化|頂級|良好', case=False)
-            is_negative = s.str.contains('🟢|賣出|熊市|削弱|評級差', case=False)
-            is_neutral = s.str.contains('🟡|觀望|中性|不適用', case=False) 
-            
-            colors = np.select(
-                [is_negative, is_positive, is_neutral],
-                ['color: #1e8449; font-weight: bold;', 'color: #cc0000; font-weight: bold;', 'color: #cc6600;'],
-                default='color: #888888;' # 其他詳細診斷使用灰色
-            )
-            return [f'background-color: transparent; {c}' for c in colors]
-
-        # 讓 FCF/ROE/PE 診斷的行使用預設顏色 (非粗體紅/綠)
-        # 僅對 '專家領域' 欄位是核心判斷的行套用顏色樣式
-        def apply_style_by_row_name(row):
-            styles = []
-            row_name = row['專家領域']
-            result_text = row['判斷結果']
-            
-            # 核心四項判斷
-            if row_name in ['趨勢判斷 (EMA)', '動能轉折 (MACD)', '基本面驗證 (FA)', '最終策略與結論']:
-                if '🔴' in result_text or '買入' in result_text or '牛市' in result_text:
-                    style = 'color: #cc0000; font-weight: bold;'
-                elif '🟢' in result_text or '賣出' in result_text or '熊市' in result_text:
-                    style = 'color: #1e8449; font-weight: bold;'
-                elif '🟡' in result_text or '觀望' in result_text:
-                    style = 'color: #cc6600;'
-                else:
-                    style = 'color: #888888;'
-            else:
-                # FCF/ROE/PE 診斷等詳細內容，使用預設顏色
-                style = 'color: #888888;'
-
-            for _ in row:
-                styles.append(style)
-            return styles
-        
-        # 由於 Streamlit Dataframe 樣式應用限制，直接使用 HTML/Markdown 提示替代複雜的 df.style
-        # 我們將使用一個單獨的、更清晰的表格來呈現核心意見，並將詳細的診斷放在下方。
-
         # 核心判斷表格
         core_expert_df = pd.DataFrame(
             [expert_opinions_data[i] for i in range(4)], # 只取前四項核心判斷
@@ -979,11 +949,14 @@ def main():
 
 
 if __name__ == '__main__':
+    # 確保所有 key 都在 session_state 中初始化
     if 'last_search_symbol' not in st.session_state:
         st.session_state['last_search_symbol'] = "2330.TW"
     if 'data_ready' not in st.session_state:
         st.session_state['data_ready'] = False
-        
+    if 'sidebar_search_input' not in st.session_state:
+        st.session_state['sidebar_search_input'] = st.session_state['last_search_symbol']
+
     main()
     
     st.markdown("---")
