@@ -285,39 +285,18 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         elif fcf_cagr >= 5: results["FCF_Rating"] = 0.7
         else: results["FCF_Rating"] = 0.3
         
-        # ROE 資本回報效率評級 (權重 0.3) - 修正為 TTM ROE (增強數據魯棒性)
+        # ROE 資本回報效率評級 (權重 0.3)
         financials = stock.quarterly_financials
         roe_avg = 0 
-        
         if not financials.empty and 'Net Income' in financials.index and 'Total Stockholder Equity' in financials.index:
-            
-            # 1. 確保數據類型為浮點數，並處理無限值
-            net_income_series = financials.loc['Net Income'].astype(float, errors='ignore').replace([np.inf, -np.inf], np.nan)
-            equity_series = financials.loc['Total Stockholder Equity'].astype(float, errors='ignore').replace([np.inf, -np.inf], np.nan)
-            
-            # 2. TTM 淨利潤計算：獲取最近 4 個非 NaN 的季度淨利潤
-            # .dropna() 確保我們只處理有值的數據點，避免 NaN 影響 sum()
-            net_income_ttm = net_income_series.dropna().iloc[:4]
-            
-            # 3. 最新股東權益：獲取最新的非 NaN 股東權益
-            latest_equity = equity_series.dropna().iloc[0] if not equity_series.dropna().empty else np.nan
-            
-            # --- TTM ROE 計算邏輯判斷 ---
-            if len(net_income_ttm) >= 4 and not np.isnan(latest_equity) and latest_equity != 0:
-                # 計算過去四個季度 (TTM) 的淨利潤總和
-                ttm_net_income = net_income_ttm.sum() 
-                
-                # TTM ROE = TTM 淨利潤 / 最新股東權益
-                ttm_roe = ttm_net_income / latest_equity
-                roe_avg = ttm_roe * 100 # 轉換為百分比
-                
-            elif len(net_income_ttm) > 0 and not np.isnan(latest_equity) and latest_equity != 0: 
-                # 數據不足4季時，使用單季年化 ROE 作為備用 (單季 ROE * 4)
-                roe_avg = (net_income_ttm.iloc[0] / latest_equity) * 4 * 100 
-            else:
-                roe_avg = 0 # 數據缺失或股東權益為零
-
-        # ROE 評級邏輯保持不變
+            net_income = financials.loc['Net Income'].dropna()
+            equity = financials.loc['Total Stockholder Equity'].dropna()
+            roe_series = (net_income / equity).replace([np.inf, -np.inf], np.nan).dropna()
+            if len(roe_series) >= 4:
+                roe_avg = roe_series[:4].mean() * 100 
+            elif len(roe_series) > 0:
+                roe_avg = roe_series[0] * 100
+        
         if roe_avg >= 15: results["ROE_Rating"] = 1.0
         elif roe_avg >= 10: results["ROE_Rating"] = 0.7
         else: results["ROE_Rating"] = 0.3
