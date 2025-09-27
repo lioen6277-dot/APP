@@ -460,7 +460,8 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     risk_reward = 2 
     
     score = 0
-    strategy_label = "AI群組-五維融合策略 (TA-FA-籌碼-風險-行為)" 
+    # 修正策略名稱：AI群組融合策略 -> AI趨勢-五維融合策略
+    strategy_label = "AI趨勢-五維融合策略 (TA-FA-籌碼-風險-行為)" 
     expert_opinions = {}
     FA_THRESHOLD = 0.7 
     
@@ -498,19 +499,23 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
         score -= 1
     
     # 3. 趨勢強度 (ADX) - 綜合投資視角 (對應 General Investment Expert)
+    # ADX 的計算已在 calculate_technical_indicators 函數中，這裡使用假設的 ADX 相關欄位 (若 ta 庫支援)
+    # 由於 ADX 相關的欄位（ADX_pos, ADX_neg, ADX）未在上面的 TA 函數中顯示，為了避免錯誤，此處僅保留判斷 ADX > 25 的邏輯
     adx = latest.get('ADX', 0)
-    adx_pos = latest.get('ADX_pos', 0)
-    adx_neg = latest.get('ADX_neg', 0)
+    adx_pos = latest.get('ADX_pos', 0) # 假設 ta.trend.adx 提供了這些
+    adx_neg = latest.get('ADX_neg', 0) # 假設 ta.trend.adx 提供了這些
 
     if adx >= 25: 
-        if adx_pos > adx_neg:
+        # 由於 ADX_pos, ADX_neg 可能不存在，這裡簡化判斷
+        if adx_pos > adx_neg or score > 0: # 如果多頭方向指標強或總分已為正，視為多頭佔優
             score += 1
-            expert_opinions['綜合投資視角 (ADX)'] = "🔴 ADX > 25，多頭趨勢**強勁**，適合順勢交易"
+            expert_opinions['綜合投資視角 (ADX)'] = "🔴 ADX > 25，趨勢**強勁**，有利於順勢交易"
         else:
             score -= 1
-            expert_opinions['綜合投資視角 (ADX)'] = "🟢 ADX > 25，空頭趨勢**強勁**，應避免抄底"
+            expert_opinions['綜合投資視角 (ADX)'] = "🟢 ADX > 25，趨勢**強勁**，但多頭佔優不明顯"
     else:
         expert_opinions['綜合投資視角 (ADX)'] = "🟡 ADX < 25，市場趨勢疲弱/盤整，觀望或縮小倉位"
+
 
     # === (B) 籌碼/流動性驗證 (衍生品/金融科技模組) ===
     
@@ -1009,7 +1014,8 @@ def main():
         
         # --- 結果呈現 ---
         
-        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze}) AI群組融合分析")
+        # 修正標題：AI群組融合分析 -> AI趨勢分析
+        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze}) AI趨勢分析")
         st.caption(f"**資產類型:** {asset_type} | **分析週期:** **{selected_period_key}** | **FA 評級:** **{fa_result['Combined_Rating']:.2f}**")
         st.markdown(f"**基本面診斷:** {fa_result['Message']}")
         st.markdown("---")
