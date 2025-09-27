@@ -230,7 +230,7 @@ def get_company_info(symbol):
 # 3. 核心分析函數 (FA + TA 策略)
 # ==============================================================================
 
-# 🎯 引入 KAMA 計算函數 (自適應趨勢濾波)
+# 🎯 引入 KAMA 計算函數 (自適應趨勢濾波) - 已修正 Timestamp/int 比較錯誤
 def kama_indicator(close, window=10, fast_period=2, slow_period=30):
     """
     Kaufman's Adaptive Moving Average (KAMA)
@@ -250,14 +250,17 @@ def kama_indicator(close, window=10, fast_period=2, slow_period=30):
 
     # 3. KAMA calculation
     kama = [np.nan] * len(df)
-    # Initialize KAMA with the first available close price
-    first_valid_index = df['Close'].index[window] if len(df) > window else len(df)
-    if first_valid_index < len(df):
-        kama[first_valid_index] = df['Close'].iloc[first_valid_index]
+    
+    # ✅ 修正 BUG: 使用起始位置 (start_pos) 作為整數索引，而非 Timestamp
+    start_pos = window 
+    
+    if start_pos < len(df):
+        # Initialize KAMA at the starting integer position
+        kama[start_pos] = df['Close'].iloc[start_pos]
         
-    for i in range(first_valid_index + 1, len(df)):
+    for i in range(start_pos + 1, len(df)):
         if pd.isna(df['SC'].iloc[i]):
-             kama[i] = kama[i-1] if i > 0 else df['Close'].iloc[i]
+             kama[i] = kama[i-1] if i > 0 else df['Close'].iloc[i] 
         elif pd.isna(kama[i-1]):
              kama[i] = df['Close'].iloc[i] # If previous is NaN, initialize with current close
         else:
@@ -479,11 +482,7 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
 
     # === (B) 籌碼/流動性/風險驗證 ===
     
-    # 4. OBV 資金流向 (操盤手/籌碼模組)
-    obv = latest.get('OBV', np.nan)
-    obv_ema = latest.get('OBV_EMA', np.nan) # 假定 OBV_EMA 已被計算 (若無，此處將為 NaN)
-    
-    # 由於 app2.0.py 未計算 OBV/OBV_EMA，為保持程式碼簡潔性，這裡使用價格/成交量進行簡易籌碼判斷
+    # 4. 籌碼/量能 (使用簡易價格/成交量判斷)
     volume = latest.get('Volume', 0)
     avg_volume = df['Volume'].mean()
     
