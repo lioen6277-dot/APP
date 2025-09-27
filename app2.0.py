@@ -18,7 +18,7 @@ warnings.filterwarnings('ignore')
 # ==============================================================================
 
 st.set_page_config(
-    page_title="🤖 AI趨勢分析儀表板 📈",
+    page_title="🤖 AI趨勢分析儀表板 📈", # 已更新分頁標題，新增 📈 圖標
     page_icon="📈", 
     layout="wide"
 )
@@ -32,6 +32,7 @@ PERIOD_MAP = {
 }
 
 # 🚀 您的【所有資產清單】(ALL_ASSETS_MAP) - 涵蓋美股、台股、加密貨幣、指數、ETF
+# 此清單已大幅擴展，以滿足使用者對「所有股票和加密貨幣」的需求。
 ALL_ASSETS_MAP = {
     # ----------------------------------------------------
     # A. 美股核心 (US Stocks) - 個股
@@ -111,9 +112,13 @@ ALL_ASSETS_MAP = {
     "LINK-USD": {"name": "Chainlink", "keywords": ["Chainlink", "LINK", "LINK-USDT"]},
 }
 
+# FULL_SYMBOLS_MAP 現在使用完整的資產清單
 FULL_SYMBOLS_MAP = ALL_ASSETS_MAP
 
+
+# ==============================================================================
 # 🎯 新增兩層選擇的類別與熱門選項映射 (基於 FULL_SYMBOLS_MAP)
+# ==============================================================================
 CATEGORY_MAP = {
     # US Stocks & ETFs & Indices
     "美股 (US) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if not (c.endswith(".TW") or c.endswith("-USD") or c.startswith("^TWII"))],
@@ -230,45 +235,7 @@ def get_company_info(symbol):
 # 3. 核心分析函數 (FA + TA 策略)
 # ==============================================================================
 
-# 🎯 引入 KAMA 計算函數 (自適應趨勢濾波) - 已修正 Timestamp/int 比較錯誤
-def kama_indicator(close, window=10, fast_period=2, slow_period=30):
-    """
-    Kaufman's Adaptive Moving Average (KAMA)
-    """
-    df = pd.DataFrame({'Close': close})
-    # 1. Efficiency Ratio (ER)
-    # Direction: Net change over 'window' periods
-    df['Direction'] = abs(df['Close'].diff(window))
-    # Volatility: Sum of absolute changes over 'window' periods
-    df['Volatility'] = df['Close'].diff().abs().rolling(window=window).sum()
-    df['ER'] = df['Direction'] / df['Volatility']
-
-    # 2. Smoothing Constant (SC)
-    sc_fast = 2 / (fast_period + 1)
-    sc_slow = 2 / (slow_period + 1)
-    df['SC'] = (df['ER'] * (sc_fast - sc_slow) + sc_slow) ** 2
-
-    # 3. KAMA calculation
-    kama = [np.nan] * len(df)
-    
-    # ✅ 修正 BUG: 使用起始位置 (start_pos) 作為整數索引，而非 Timestamp
-    start_pos = window 
-    
-    if start_pos < len(df):
-        # Initialize KAMA at the starting integer position
-        kama[start_pos] = df['Close'].iloc[start_pos]
-        
-    for i in range(start_pos + 1, len(df)):
-        if pd.isna(df['SC'].iloc[i]):
-             kama[i] = kama[i-1] if i > 0 else df['Close'].iloc[i] 
-        elif pd.isna(kama[i-1]):
-             kama[i] = df['Close'].iloc[i] # If previous is NaN, initialize with current close
-        else:
-            kama[i] = kama[i-1] + df['SC'].iloc[i] * (df['Close'].iloc[i] - kama[i-1])
-            
-    return pd.Series(kama, index=df.index).ffill() # 使用 ffill 確保數據連續性
-
-
+# 🚩 數據處理緩存，保持穩定
 @st.cache_data(ttl=3600) 
 def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
     """
@@ -309,29 +276,40 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         if not cf.empty and len(cf.columns) >= 2:
             operating_cf = cf.loc['Operating Cash Flow'].dropna()
             capex = cf.loc['Capital Expenditure'].dropna().abs() 
-            # 修正 FCF 計算：Free Cash Flow = Operating Cash Flow - Capital Expenditure
-            fcf = (operating_cf - capex).dropna() 
+            fcf = (operating_cf + capex).dropna() 
             num_periods = min(years, len(fcf)) - 1
             if len(fcf) >= 2 and fcf.iloc[-1] > 0 and fcf.iloc[0] > 0 and num_periods > 0:
-                # CAGR 修正：計算從最舊到最新的成長率
                 fcf_cagr = ((fcf.iloc[0] / fcf.iloc[-1]) ** (1 / num_periods) - 1) * 100
         
         if fcf_cagr >= 15: results["FCF_Rating"] = 1.0
         elif fcf_cagr >= 5: results["FCF_Rating"] = 0.7
         else: results["FCF_Rating"] = 0.3
         
-        # ROE 資本回報效率評級 (權重 0.3)
+        # ROE 資本回報效率評級 (權重 0.3) - 修正為 TTM ROE
         financials = stock.quarterly_financials
         roe_avg = 0 
+        
         if not financials.empty and 'Net Income' in financials.index and 'Total Stockholder Equity' in financials.index:
             net_income = financials.loc['Net Income'].dropna()
             equity = financials.loc['Total Stockholder Equity'].dropna()
-            roe_series = (net_income / equity).replace([np.inf, -np.inf], np.nan).dropna()
-            if len(roe_series) >= 4:
-                roe_avg = roe_series[:4].mean() * 100 
-            elif len(roe_series) > 0:
-                roe_avg = roe_series[0] * 100
-        
+            
+            # --- 修正後的 TTM ROE 計算邏輯 (過去四季度淨利潤總和 / 最新一期股東權益) ---
+            if len(net_income) >= 4 and len(equity) >= 1:
+                # 1. 計算過去四個季度 (TTM) 的淨利潤總和 (yfinance series 最新在最前面 index 0)
+                ttm_net_income = net_income.iloc[:4].sum() 
+                # 2. 獲取最新一期股東權益
+                latest_equity = equity.iloc[0] 
+                
+                if latest_equity != 0 and latest_equity != np.nan:
+                    # TTM ROE = TTM 淨利潤 / 最新股東權益 (結果為小數)
+                    ttm_roe = ttm_net_income / latest_equity
+                    roe_avg = ttm_roe * 100 # 轉換為百分比
+                    
+            elif len(net_income) > 0 and len(equity) > 0 and equity.iloc[0] != 0: 
+                # 數據不足4季時，使用單季年化 ROE 作為備用 (單季 ROE * 4)
+                roe_avg = (net_income.iloc[0] / equity.iloc[0]) * 4 * 100 
+
+        # ROE 評級邏輯保持不變
         if roe_avg >= 15: results["ROE_Rating"] = 1.0
         elif roe_avg >= 10: results["ROE_Rating"] = 0.7
         else: results["ROE_Rating"] = 0.3
@@ -346,7 +324,7 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
 
         # 綜合評級
         results["Combined_Rating"] = (results["FCF_Rating"] * 0.4) + (results["ROE_Rating"] * 0.3) + (results["PE_Rating"] * 0.3)
-        results["Message"] = f"FCF CAGR: {fcf_cagr:.2f}%. | 4季平均ROE: {roe_avg:.2f}%. | PE: {pe_ratio:.2f}."
+        results["Message"] = f"FCF CAGR: {fcf_cagr:.2f}%. | TTM ROE: {roe_avg:.2f}%. | PE: {pe_ratio:.2f}."
         
     except Exception as e:
         results["Message"] = f"基本面計算失敗或無足夠數據: {e}"
@@ -357,8 +335,8 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
 @st.cache_data(ttl=60) 
 def calculate_technical_indicators(df):
     """
-    ✅ 完整技術指標計算：使用 ta 庫確保穩定性，並新增 KAMA。
-    (MACD, RSI, KD, ADX, ATR, KAMA)
+    ✅ 完整技術指標計算：使用 ta 庫確保穩定性。
+    (MACD, RSI, KD, ADX, ATR, 多 EMA)
     """
     if df.empty: return df
     
@@ -372,9 +350,6 @@ def calculate_technical_indicators(df):
     df['ADX'] = ta.trend.adx(df['High'], df['Low'], df['Close'], window=14, fillna=False)
     df['ADX_pos'] = ta.trend.adx_pos(df['High'], df['Low'], df['Close'], window=14, fillna=False)
     df['ADX_neg'] = ta.trend.adx_neg(df['High'], df['Low'], df['Close'], window=14, fillna=False)
-    
-    # 🎯 新增 KAMA 計算
-    df['KAMA'] = kama_indicator(df['Close'], window=10, fast_period=2, slow_period=30)
     
     # 動能
     macd_instance = ta.trend.MACD(df['Close'], window_fast=12, window_slow=26, window_sign=9, fillna=False)
@@ -394,19 +369,20 @@ def calculate_technical_indicators(df):
     df['ATR'] = ta.volatility.average_true_range(df['High'], df['Low'], df['Close'], window=14, fillna=False)
     
     # 確保所有核心指標計算完成後再刪除 NaNs
-    df.dropna(how='all', subset=['Close', 'EMA_50', 'MACD_Hist', 'RSI', 'ATR', 'KAMA'], inplace=True)
+    df.dropna(how='all', subset=['Close', 'EMA_50', 'MACD_Hist', 'RSI', 'ATR'], inplace=True)
     return df
 
 
 # ==============================================================================
-# 4. 融合決策與信號生成 (五維融合策略 - 實現所有修正)
+# 4. 融合決策與信號生成 (FA + TA 專注策略)
 # ==============================================================================
 
 # 🚩 數據處理緩存，保持穩定
 @st.cache_data(ttl=60) 
-def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_term: bool, asset_type: str) -> dict:
+def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_term: bool) -> dict:
     """
-    🎯 專業提升: 實施 AI趨勢-五維融合策略 (TA-FA-籌碼-風險-行為)，並包含 ATR 風控懲罰。
+    生成融合 FA/TA 的最終交易決策、信心度與風控參數。
+    Score 範圍: [-10, 10]
     """
     if df.empty or len(df) < 2:
         return {'recommendation': "數據不足，觀望", 'confidence': 50, 'score': 0, 'action': "觀望", 'atr': 0, 'entry_price': 0, 'stop_loss': 0, 'take_profit': 0, 'strategy': "N/A", 'expert_opinions': {}, 'current_price': 0, 'action_color': 'orange'}
@@ -415,159 +391,91 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     previous = df.iloc[-2]
     current_price = latest['Close']
     
-    # 🎯 基於 ATR 的精確風控參數 (R:R=2:1) - 衍生品/風險管理模組視角
+    # 🎯 基於 ATR 的精確風控參數 (R:R=2:1)
     atr = latest.get('ATR', current_price * 0.015) 
     risk_dist = 2 * atr 
     risk_reward = 2 
     
     score = 0
-    strategy_label = "AI趨勢-五維融合策略 (TA-FA-籌碼-風險-行為)" 
+    strategy_label = "TA 動能策略"
     expert_opinions = {}
-    
     FA_THRESHOLD = 0.7 
-    ATR_THRESHOLD = 0.035 # 3.5% 的波動率臨界值 (針對 TSLA 高波動特性)
-    current_atr_to_price = atr / current_price if current_price != 0 else 0
     
-    # KAMA 趨勢值 (用於 ADX 雙重濾波)
-    kama = latest.get('KAMA', np.nan)
+    # === (A) 技術分析 TA Score (權重高) ===
     
-    # === (A) 技術分析 / 動能 / 適應性趨勢 (操盤動能/量化模組) ===
+    # 1. 趨勢判斷 (EMA-200)
+    is_long_term_bull = latest.get('EMA_200', -1) > 0 and current_price > latest['EMA_200']
+    if is_long_term_bull: 
+        score += 4
+        expert_opinions['趨勢判斷 (EMA)'] = "長期牛市確立 (Price > EMA-200)"
+    else:
+        score = score - 1 # 趨勢不佳扣分
+        expert_opinions['趨勢判斷 (EMA)'] = "長期熊市/盤整"
     
-    # 1. 動態適應性趨勢 (KAMA) - 量化模組視角
-    kama_is_rising = kama > previous.get('KAMA', kama)
-    if not np.isnan(kama) and not np.isnan(previous.get('KAMA', np.nan)):
-        if current_price > kama and kama_is_rising:
-            score += 4 
-            expert_opinions['量化模組 (KAMA)'] = "🔴 KAMA 趨勢濾波器: 價格 > KAMA 且 KAMA 向上，趨勢強勁"
-        elif current_price < kama and not kama_is_rising:
-            score -= 4
-            expert_opinions['量化模組 (KAMA)'] = "🟢 KAMA 趨勢濾波器: 價格 < KAMA 且 KAMA 向下，趨勢衰弱"
-        else:
-            expert_opinions['量化模組 (KAMA)'] = "🟡 KAMA 趨勢濾波器: 價格與 KAMA 糾結/橫盤，趨勢不清晰"
-            
-    # 2. MACD 動能轉折 (操盤動能模組) 
+    # 2. MACD 動能轉折 (黃金/死亡交叉)
     macd_cross_buy = (latest['MACD_Line'] > latest['MACD_Signal']) and (previous['MACD_Line'] <= previous['MACD_Signal'])
     macd_cross_sell = (latest['MACD_Line'] < latest['MACD_Signal']) and (previous['MACD_Line'] >= previous['MACD_Signal'])
 
     if macd_cross_buy: 
         score += 3
-        expert_opinions['操盤動能模組 (MACD)'] = "🔴 MACD 黃金交叉，短線動能轉強，確認買入時機"
+        expert_opinions['動能轉折 (MACD)'] = "MACD 黃金交叉 (買進信號)"
     elif macd_cross_sell: 
         score -= 3
-        expert_opinions['操盤動能模組 (MACD)'] = "🟢 MACD 死亡交叉，短線動能轉弱，確認賣出時機"
+        expert_opinions['動能轉折 (MACD)'] = "MACD 死亡交叉 (賣出信號)"
     elif latest['MACD_Hist'] > 0: 
         score += 1
+        expert_opinions['動能轉折 (MACD)'] = "動能柱持續增長 (> 0)"
     elif latest['MACD_Hist'] < 0: 
         score -= 1
-    
-    # 3. 趨勢強度 (ADX) - 綜合投資視角 (Action 3: KAMA 雙重濾波強化)
-    adx = latest.get('ADX', 0)
-    adx_pos = latest.get('ADX_pos', 0) 
-    adx_neg = latest.get('ADX_neg', 0) 
-
-    if adx >= 25: 
-        if adx_pos > adx_neg and current_price > kama: # 🎯 多頭趨勢強勁 + 價格在 KAMA 之上
-            score += 3 # 提升權重：最高確認信號
-            expert_opinions['綜合投資視角 (ADX)'] = "🔴 ADX > 25 且 +DI/+KAMA 雙重確認，趨勢**強勁多頭**"
-        elif adx_neg > adx_pos and current_price < kama: # 🎯 空頭趨勢強勁 + 價格在 KAMA 之下
-            score -= 3
-            expert_opinions['綜合投資視角 (ADX)'] = "🟢 ADX > 25 且 -DI/-KAMA 雙重確認，趨勢**強勁空頭**"
-        else:
-            score += (1 if adx_pos > adx_neg else -1) # 趨勢強勁，但方向不一致
-            expert_opinions['綜合投資視角 (ADX)'] = "🟡 ADX > 25，趨勢強勁但方向與 KAMA 不一致/轉換中"
-    elif adx < 20:
-        expert_opinions['綜合投資視角 (ADX)'] = "🟡 ADX < 20，市場處於**盤整期**，觀望或等待突破"
-    else:
-        expert_opinions['綜合投資視角 (ADX)'] = "🟡 ADX 處於 20-25，趨勢發展中"
-
-    # === (B) 籌碼/流動性/風險驗證 ===
-    
-    # 4. 籌碼/量能 (使用簡易價格/成交量判斷)
-    volume = latest.get('Volume', 0)
-    avg_volume = df['Volume'].mean()
-    
-    if volume > avg_volume * 1.5: # 交易量激增
-        if current_price > previous['Close']:
-            score += 1
-            expert_opinions['金融科技模組 (籌碼/量能)'] = "🔴 成交量激增 ( > 1.5x Avg)，驗證多頭趨勢"
-        else:
-            score -= 1
-            expert_opinions['金融科技模組 (籌碼/量能)'] = "🟢 成交量激增，但價格下跌，警惕出貨風險"
-    else:
-        expert_opinions['金融科技模組 (籌碼/量能)'] = "🟡 成交量中性"
-
-
-    # 5. 波動性/潛在流動性 (ATR) - 風險管理模組 (Action 2: ATR 過高懲罰)
-    if current_atr_to_price > ATR_THRESHOLD: 
-        score -= 2 # 懲罰性扣分
-        expert_opinions['風險管理模組 (風控)'] = f"🟢 ATR/Price 極高 ({current_atr_to_price*100:.2f}%)，波動性**極高** (高風險區)，強烈建議降低配置，Score -2"
-    else:
-        expert_opinions['風險管理模組 (風控)'] = f"🔴 ATR/Price 正常 ({current_atr_to_price*100:.2f}%)，風險處於可控範圍"
-
-
-    # === (C) 基本面 / 宏觀 / 行為 ===
-    
-    # 6. 基本面評級 - 財務/估值模組 (Action 1: 降低 FA 權重，避免數據偏差影響)
-    # 僅長線分析且為個股時，FA 才具備權重
-    if is_long_term and asset_type in ['US_STOCK', 'TW_STOCK'] and not any(ext in asset_type for ext in ['^', '00']):
-        if fa_rating >= 0.9: 
-            score += 2 # 權重從 3 降至 2 (Action 1)
-            expert_opinions['財務/估值模組 (FA)'] = "🔴 FA 頂級評級，強化長線多頭信心 (系統性配置)"
-        elif fa_rating >= FA_THRESHOLD: 
-            score += 0 # 權重從 1 降至 0 (Action 1)
-            expert_opinions['財務/估值模組 (FA)'] = "🟡 FA 良好評級 (中性貢獻)，不影響TA決策"
-        elif fa_rating < FA_THRESHOLD and score > 0: 
-            score = max(0, score - 2) 
-            expert_opinions['財務/估值模組 (FA)'] = "🟢 FA 評級差，削弱 TA 買入信號 (長線價值不足)，Score -2"
-        else:
-            expert_opinions['財務/估值模組 (FA)'] = "🟡 FA 中性/不適用，長線配置須謹慎"
-    else:
-         expert_opinions['財務/估值模組 (FA)'] = "🟡 FA 不參與計分 (短線或非個股)"
+        expert_opinions['動能轉折 (MACD)'] = "動能柱持續減弱 (< 0)"
         
-    # 7. ESG 投資模組視角 (邏輯不變)
-    # 使用 FA 評級作為 ESG-Governance 的代理指標
-    if asset_type in ['US_STOCK', 'TW_STOCK', 'INDEX_ETF']:
-        if fa_rating >= 0.8:
-             expert_opinions['ESG/可持續性模組'] = "🔴 財務指標強勁，具備優良的長期可持續性(ESG-G)，支持配置"
-        elif fa_rating < 0.5 and asset_type == 'US_STOCK':
-             expert_opinions['ESG/可持續性模組'] = "🟢 財務指標較弱，長期可持續性存疑，警惕配置風險"
-        else:
-             expert_opinions['ESG/可持續性模組'] = "🟡 中性財務表現，ESG 面向無強烈訊號，以 TA/宏觀為主"
-    else:
-        expert_opinions['ESG/可持續性模組'] = "🟡 加密貨幣或指數 ETF 不適用傳統 ESG 判斷，設為中性。"
-        
-    # 8. 行為金融/情緒 (邏輯不變)
-    rsi = latest.get('RSI', 50)
-    
-    # 納入超買超賣 + 動能轉向的行為金融判斷
-    if rsi < 30 and macd_cross_buy:
+    # 3. RSI 超買超賣與動能強度
+    rsi = latest['RSI']
+    if rsi < 30: 
         score += 2
-        expert_opinions['行為金融模組 (情緒)'] = "🔴 極端超賣區 (RSI<30) 出現動能反轉，**反向買入**機會"
-    elif rsi > 70 and macd_cross_sell:
+        expert_opinions['動能強度 (RSI)'] = "嚴重超賣 (潛在反彈)"
+    elif rsi > 70: 
         score -= 2
-        expert_opinions['行為金融模組 (情緒)'] = "🟢 極端超買區 (RSI>70) 出現動能轉弱，**反向賣出**機會"
-    else:
-        expert_opinions['行為金融模組 (情緒)'] = "🟡 情緒處於中性區間，無明顯羊群效應或恐慌拋售"
-        
-    # 9. 宏觀經濟 (邏輯不變)
-    if current_price > latest.get('EMA_200', current_price):
-        expert_opinions['宏觀經濟模組 (趨勢)'] = "🔴 價格高於長期均線 (EMA-200)，宏觀環境支持多頭"
-    else:
-        expert_opinions['宏觀經濟模組 (趨勢)'] = "🟢 價格低於長期均線 (EMA-200)，宏觀環境存在壓力"
-
-
-    # === (D) 最終決策與風控設定 (Action 4: 信心指數校準) ===
+        expert_opinions['動能強度 (RSI)'] = "嚴重超買 (潛在回調)"
+    elif rsi > 55: 
+        score += 1
+        expert_opinions['動能強度 (RSI)'] = "強勢區間"
+    elif rsi < 45: 
+        score -= 1
+        expert_opinions['動能強度 (RSI)'] = "弱勢區間"
     
-    # 最終決策 (基於最終分數)
-    if score >= 8: recommendation, action, action_color = "極高度信心買入 (強烈配置)", "買進 (Buy)", 'red'
-    elif score >= 4: recommendation, action, action_color = "高度信心買入", "買進 (Buy)", 'red'
-    elif score >= 1: recommendation, action, action_color = "買入建議", "買進 (Buy)", 'red'
-    elif score <= -8: recommendation, action, action_color = "極高度信心賣出 (減持/放空)", "賣出 (Sell/Short)", 'green'
-    elif score <= -4: recommendation, action, action_color = "高度信心賣出", "賣出 (Sell/Short)", 'green'
-    elif score <= -1: recommendation, action, action_color = "賣出建議", "賣出 (Sell/Short)", 'green'
-    else: recommendation, action, action_color = "觀望/中性 (持有)", "觀望", 'orange'
+    # === (B) 基本面 FA Score (僅長線有效，作為篩選器) ===
+    
+    if is_long_term:
+        if fa_rating >= 0.9: 
+            # 只有指數/ETF 才會到 1.0，給予最高加分
+            score += 3 
+            expert_opinions['基本面驗證 (FA)'] = "FA 頂級評級，大幅強化多頭信心 (主要為指數/ETF)"
+        elif fa_rating >= FA_THRESHOLD: 
+            # 正常美股個股可能達到此區間 (0.7 ~ 0.9)
+            score += 1 
+            expert_opinions['基本面驗證 (FA)'] = "FA 良好評級，溫和強化多頭信心"
+        elif fa_rating < FA_THRESHOLD and fa_rating > 0.6: 
+            # FA 中性 (0.5)，不加分，但也不扣分，除非 TA 趨勢極差
+            expert_opinions['基本面驗證 (FA)'] = "FA 中性評級 (或數據不適用)，TA 獨立分析"
+        elif fa_rating < FA_THRESHOLD and score > 0: 
+            # FA 差 (低於 0.3)，且 TA 鼓勵買入，則削弱 TA 信號
+            score = max(0, score - 2) 
+            expert_opinions['基本面驗證 (FA)'] = "FA 評級差，削弱 TA 買入信號"
+    else:
+        expert_opinions['基本面驗證 (FA)'] = "短期分析，FA 不參與計分"
 
-    # 風控價格 (R:R=2:1 邏輯保持不變)
+
+    # === (D) 最終決策與風控設定 ===
+    
+    # 最終決策
+    if score >= 6: recommendation, action, action_color = "高度信心買入", "買進 (Buy)", 'red'
+    elif score >= 2: recommendation, action, action_color = "買入建議", "買進 (Buy)", 'red'
+    elif score <= -6: recommendation, action, action_color = "高度信心賣出", "賣出 (Sell/Short)", 'green'
+    elif score <= -2: recommendation, action, action_color = "賣出建議", "賣出 (Sell/Short)", 'green'
+    else: recommendation, action, action_color = "觀望/中性", "觀望", 'orange'
+
+    # 風控價格
     entry_suggestion = current_price
     if '買進' in action:
         stop_loss = current_price - risk_dist
@@ -576,20 +484,11 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
         stop_loss = current_price + risk_dist
         take_profit = current_price - (risk_dist * risk_reward)
     else:
+        # 觀望狀態下，止損止盈範圍縮小至 1 倍 ATR 
         stop_loss = current_price - atr
         take_profit = current_price + atr
     
-    # 🎯 Action 4: 信心指數校準 (與高波動風險聯動)
-    confidence_base = 50 + score * 4 
-    
-    # 如果觸發了高 ATR 懲罰，則額外扣除信心
-    if current_atr_to_price > ATR_THRESHOLD:
-        confidence_penalty = 15 # 高風險扣除 15% 信心
-    else:
-        confidence_penalty = 0 
-        
-    # 設置上限 90% (防止過度自信)，並引入懲罰
-    confidence = np.clip(confidence_base - confidence_penalty, 30, 90) 
+    confidence = np.clip(50 + score * 5, 30, 95) # 將分數轉換為信心度 (30%-95% 之間)
     
     expert_opinions['最終策略與結論'] = f"{strategy_label}：{recommendation} (總量化分數: {score})"
     
@@ -617,7 +516,6 @@ def get_technical_data_df(df):
     close = latest.get('Close', np.nan)
     
     indicators = {
-        'KAMA (趨勢濾波)': latest.get('KAMA', np.nan), # 🎯 新增 KAMA
         'RSI (14)': latest.get('RSI', np.nan),
         'ADX (14)': latest.get('ADX', np.nan),
         'MACD (柱狀圖)': latest.get('MACD_Hist', np.nan),
@@ -631,18 +529,8 @@ def get_technical_data_df(df):
     for name, value in indicators.items():
         status, color, display_val = "N/A", "grey", "N/A"
         
-        if name in ['KAMA (趨勢濾波)', 'RSI (14)', 'ADX (14)', 'MACD (柱狀圖)', 'ATR (14)']:
+        if name in ['RSI (14)', 'ADX (14)', 'MACD (柱狀圖)', 'ATR (14)']:
             if pd.isna(value): pass
-            elif name == 'KAMA (趨勢濾波)':
-                kama = value
-                kama_is_rising = kama > df['KAMA'].iloc[-2] if len(df) >= 2 and 'KAMA' in df.columns else False
-                if close > kama and kama_is_rising:
-                    status, color = "🔴 價格在 KAMA 之上且趨勢向上", "red"
-                elif close < kama and not kama_is_rising:
-                    status, color = "🟢 價格在 KAMA 之下且趨勢向下", "green"
-                else:
-                    status, color = "🟡 價格在 KAMA 附近，趨勢不明", "orange"
-                display_val = f"{value:.2f}"
             elif name == 'RSI (14)':
                 # 紅色=多頭/強化: 超賣(潛在反彈), 強勢區間
                 if value <= 30: status, color = "🔴 嚴重超賣 (潛在反彈)", "red"
@@ -718,6 +606,7 @@ def create_comprehensive_chart(df, symbol, period):
         row_width=[0.3, 0.1, 0.1, 0.1, 0.1]
     )
     
+    # ... (圖表繪製邏輯保持不變) ...
     # 1. 主價格圖 (使用亞洲習慣：紅漲綠跌)
     fig.add_trace(go.Candlestick(
         x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], 
@@ -729,9 +618,6 @@ def create_comprehensive_chart(df, symbol, period):
     # 移動平均線 (MAs)
     if 'EMA_5' in df.columns: fig.add_trace(go.Scatter(x=df.index, y=df['EMA_5'], name='EMA 5', line=dict(color='#FFD700', width=1)), row=1, col=1)
     if 'EMA_200' in df.columns: fig.add_trace(go.Scatter(x=df.index, y=df['EMA_200'], name='EMA 200', line=dict(color='#808080', width=2)), row=1, col=1)
-    # 🎯 新增 KAMA 曲線
-    if 'KAMA' in df.columns: fig.add_trace(go.Scatter(x=df.index, y=df['KAMA'], name='KAMA', line=dict(color='#008080', width=1.5)), row=1, col=1)
-
 
     # 2. MACD (使用紅漲綠跌邏輯)
     if 'MACD_Hist' in df.columns:
@@ -750,8 +636,6 @@ def create_comprehensive_chart(df, symbol, period):
     # 4. ADX 
     if 'ADX' in df.columns:
         fig.add_trace(go.Scatter(x=df.index, y=df['ADX'], name='ADX', line=dict(color='#000000', width=2)), row=4, col=1)
-        fig.add_trace(go.Scatter(x=df.index, y=df['ADX_pos'], name='+DI', line=dict(color='red', width=1)), row=4, col=1)
-        fig.add_trace(go.Scatter(x=df.index, y=df['ADX_neg'], name='-DI', line=dict(color='green', width=1)), row=4, col=1)
         fig.add_hline(y=25, line_dash="dot", line_color="#7F8C8D", annotation_text="強趨勢線 (25)", row=4, col=1) 
 
     # 5. 成交量 (Volume)
@@ -790,19 +674,8 @@ def get_currency_symbol(symbol: str) -> str:
     elif symbol.endswith('-USD') or not any(ext in symbol for ext in ['.TW', '.HK', '.SS', '.L']):
         # 預設為美元 (適用於美股和加密貨幣)
         return '$'
+    # 可以擴展其他市場，例如：elif symbol.endswith('.HK'): return 'HK$'
     return '$'
-
-
-def get_asset_type(symbol: str) -> str:
-    """判斷資產類型以應用不同的 FA/風險邏輯"""
-    if symbol.endswith('-USD'):
-        return 'CRYPTO'
-    elif symbol.endswith('.TW'):
-        return 'TW_STOCK'
-    elif symbol.startswith('^') or symbol in ['SPY', 'QQQ', 'VOO']:
-        return 'INDEX_ETF'
-    else:
-        return 'US_STOCK'
 
 
 def main():
@@ -918,10 +791,10 @@ def main():
             with st.spinner(f"🔍 正在啟動顧問團，獲取並分析 **{final_symbol_to_analyze}** 的數據 ({selected_period_key})..."):
                 
                 df = get_stock_data(final_symbol_to_analyze, yf_period, yf_interval) 
-                asset_type = get_asset_type(final_symbol_to_analyze) # 獲取資產類型
-
+                
                 if df.empty:
                     # 💡 修正：如果解析結果仍是中文，顯示更準確的代碼提示
+                    # 嘗試從 FULL_SYMBOLS_MAP 中找到標準代碼
                     display_symbol = final_symbol_to_analyze
                     for code, data in FULL_SYMBOLS_MAP.items():
                         if data["name"] == final_symbol_to_analyze:
@@ -938,13 +811,10 @@ def main():
                     
                     df = calculate_technical_indicators(df) 
                     fa_result = calculate_fundamental_rating(final_symbol_to_analyze)
-                    
-                    # 🎯 傳入 asset_type 供融合策略使用
                     analysis = generate_expert_fusion_signal(
                         df, 
                         fa_rating=fa_result['Combined_Rating'], 
-                        is_long_term=is_long_term,
-                        asset_type=asset_type
+                        is_long_term=is_long_term
                     )
                     
                     # 🚩 關鍵修正：將所有分析結果存入 Session State
@@ -1136,4 +1006,4 @@ if __name__ == '__main__':
     
     st.markdown("---")
     st.markdown("⚠️ **免責聲明:** 本分析模型包含多位專家的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
-    st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 & 自行實現KAMA | **APP優化:** AI投資策略架構師")
+    st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
