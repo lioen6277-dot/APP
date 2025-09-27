@@ -285,29 +285,37 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         elif fcf_cagr >= 5: results["FCF_Rating"] = 0.7
         else: results["FCF_Rating"] = 0.3
         
-        # ROE 資本回報效率評級 (權重 0.3) - 修正為 TTM ROE
+        # ROE 資本回報效率評級 (權重 0.3) - 修正為 TTM ROE (增強數據魯棒性)
         financials = stock.quarterly_financials
         roe_avg = 0 
         
         if not financials.empty and 'Net Income' in financials.index and 'Total Stockholder Equity' in financials.index:
-            net_income = financials.loc['Net Income'].dropna()
-            equity = financials.loc['Total Stockholder Equity'].dropna()
             
-            # --- 修正後的 TTM ROE 計算邏輯 (過去四季度淨利潤總和 / 最新一期股東權益) ---
-            if len(net_income) >= 4 and len(equity) >= 1:
-                # 1. 計算過去四個季度 (TTM) 的淨利潤總和 (yfinance series 最新在最前面 index 0)
-                ttm_net_income = net_income.iloc[:4].sum() 
-                # 2. 獲取最新一期股東權益
-                latest_equity = equity.iloc[0] 
+            # 1. 確保數據類型為浮點數，並處理無限值
+            net_income_series = financials.loc['Net Income'].astype(float, errors='ignore').replace([np.inf, -np.inf], np.nan)
+            equity_series = financials.loc['Total Stockholder Equity'].astype(float, errors='ignore').replace([np.inf, -np.inf], np.nan)
+            
+            # 2. TTM 淨利潤計算：獲取最近 4 個非 NaN 的季度淨利潤
+            # .dropna() 確保我們只處理有值的數據點，避免 NaN 影響 sum()
+            net_income_ttm = net_income_series.dropna().iloc[:4]
+            
+            # 3. 最新股東權益：獲取最新的非 NaN 股東權益
+            latest_equity = equity_series.dropna().iloc[0] if not equity_series.dropna().empty else np.nan
+            
+            # --- TTM ROE 計算邏輯判斷 ---
+            if len(net_income_ttm) >= 4 and not np.isnan(latest_equity) and latest_equity != 0:
+                # 計算過去四個季度 (TTM) 的淨利潤總和
+                ttm_net_income = net_income_ttm.sum() 
                 
-                if latest_equity != 0 and latest_equity != np.nan:
-                    # TTM ROE = TTM 淨利潤 / 最新股東權益 (結果為小數)
-                    ttm_roe = ttm_net_income / latest_equity
-                    roe_avg = ttm_roe * 100 # 轉換為百分比
-                    
-            elif len(net_income) > 0 and len(equity) > 0 and equity.iloc[0] != 0: 
+                # TTM ROE = TTM 淨利潤 / 最新股東權益
+                ttm_roe = ttm_net_income / latest_equity
+                roe_avg = ttm_roe * 100 # 轉換為百分比
+                
+            elif len(net_income_ttm) > 0 and not np.isnan(latest_equity) and latest_equity != 0: 
                 # 數據不足4季時，使用單季年化 ROE 作為備用 (單季 ROE * 4)
-                roe_avg = (net_income.iloc[0] / equity.iloc[0]) * 4 * 100 
+                roe_avg = (net_income_ttm.iloc[0] / latest_equity) * 4 * 100 
+            else:
+                roe_avg = 0 # 數據缺失或股東權益為零
 
         # ROE 評級邏輯保持不變
         if roe_avg >= 15: results["ROE_Rating"] = 1.0
@@ -324,7 +332,7 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
 
         # 綜合評級
         results["Combined_Rating"] = (results["FCF_Rating"] * 0.4) + (results["ROE_Rating"] * 0.3) + (results["PE_Rating"] * 0.3)
-        results["Message"] = f"FCF CAGR: {fcf_cagr:.2f}%. | TTM ROE: {roe_avg:.2f}%. | PE: {pe_ratio:.2f}."
+        results["Message"] = f"FCF CAGR: {fcf_cagr:.2f}%. | 4季平均ROE: {roe_avg:.2f}%. | PE: {pe_ratio:.2f}."
         
     except Exception as e:
         results["Message"] = f"基本面計算失敗或無足夠數據: {e}"
