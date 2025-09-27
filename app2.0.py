@@ -818,7 +818,9 @@ def main():
     period_keys = list(PERIOD_MAP.keys())
     selected_period_key = st.sidebar.selectbox("分析時間週期", period_keys, index=period_keys.index("1 日 (中長線)")) 
     
-    selected_period_value = PERIOD_MAP[period_keys.index(selected_period_key)]
+    # 🚩 關鍵修正: 解決 KeyError。直接使用選中的 key (字串) 來存取 PERIOD_MAP 字典
+    selected_period_value = PERIOD_MAP[selected_period_key]
+    
     yf_period, yf_interval = selected_period_value
     
     is_long_term = selected_period_key in ["1 日 (中長線)", "1 週 (長期)"]
