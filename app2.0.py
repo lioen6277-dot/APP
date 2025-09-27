@@ -32,7 +32,7 @@ PERIOD_MAP = {
 }
 
 # 🚀 您的【所有資產清單】(ALL_ASSETS_MAP) - 涵蓋美股、台股、加密貨幣、指數、ETF
-# 此清單已大幅擴展，以滿足使用者對「所有股票和加密貨幣」的需求。
+# 此清單已大幅擴展，以滿足使用者對「所有股票和加密貨幣」的需求。\
 ALL_ASSETS_MAP = {
     # ----------------------------------------------------
     # A. 美股核心 (US Stocks) - 個股
@@ -865,7 +865,8 @@ def main():
         
         # --- 結果呈現 ---
         
-        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze}) 專家融合分析")
+        # 🎯 已移除 「專家融合分析」
+        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze})") 
         
         # 計算漲跌幅
         current_price = analysis['current_price']
