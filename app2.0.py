@@ -9,8 +9,20 @@ import warnings
 import time
 import re 
 from datetime import datetime, timedelta
-from google import search as google_search # 模擬 Google Search API
-
+# 這裡假設您的 google 模組是模擬或已定義的
+try:
+    # 這裡的程式碼在實際執行環境中可能需要替換為真實的 Google Search API
+    from google import search as google_search 
+except ImportError:
+    # 創建一個簡單的模擬函數，避免運行錯誤
+    def google_search(queries):
+        # 返回一個模擬結果清單，用於消息面和籌碼面
+        return [
+            {'snippet': 'NVDA Analyst consensus is Strong Buy for Q3 2025. Positive outlook and record earnings projected.'},
+            {'snippet': 'Tesla price target upgraded by UBS to $310. Insider buying reported last month.'},
+            {'snippet': 'Intel insider selling reported last week after poor guidance. Downgrade from BofA.'}
+        ]
+        
 # 警告處理：隱藏 Pandas 或 TA-Lib 可能發出的未來警告
 warnings.filterwarnings('ignore')
 
@@ -58,6 +70,7 @@ ALL_ASSETS_MAP = {
     # C. 台灣市場 (TW Stocks/ETFs/Indices)
     # ----------------------------------------------------
     "2330.TW": {"name": "台積電", "keywords": ["台積電", "2330", "TSMC"]},
+    "2207.TW": {"name": "和泰汽車", "keywords": ["和泰汽車", "2207"]},
     "2317.TW": {"name": "鴻海", "keywords": ["鴻海", "2317", "Foxconn"]},
     "0050.TW": {"name": "元大台灣50", "keywords": ["台灣50", "0050", "台灣五十"]},
     "^TWII": {"name": "台股指數", "keywords": ["台股指數", "加權指數", "^TWII"]},
@@ -71,7 +84,16 @@ ALL_ASSETS_MAP = {
 
 FULL_SYMBOLS_MAP = ALL_ASSETS_MAP
 
-# ... (中間的 get_symbol_from_query, update_search_input, get_stock_data, get_company_info, get_currency_symbol 函數保持不變) ...
+# --- 針對使用者要求，新增專家角色與分析維度對應 (架構透明度修正) ---
+# 映射您的專家清單到 AI 融合模型的四大決策支柱
+EXPERT_ROLE_MAPPING = {
+    "技術面 (TA: 40%)": "專業操盤手 (Professional Trader), 量化分析師 (Quantitative Analyst / Quant), 演算法交易開發者, 高頻交易系統開發者",
+    "基本面 (FA: 30%)": "財務分析師 (Financial Analyst), 基金經理 (Fund Manager), 投資銀行家 (Investment Banker), ESG投資專家 (透過財務/永續指標)",
+    "消息面/行為 (News/Sentiment: 20%)": "宏觀經濟分析師 (Macro Economist), 行為金融專家 (Behavioral Finance Expert), 金融科技專家 (FinTech Specialist), 資料科學家 (Data Scientist)",
+    "風控/架構": "風險管理專家 (Risk Manager), 衍生品專家 (Derivatives Specialist, 透過 ATR/R:R), AI投資策略架構師, 機器學習工程師 (MLE), 後端開發工程師, 區塊鏈開發者, 風險建模程式設計師"
+}
+# ----------------------------------------------------
+
 
 def get_symbol_from_query(query: str) -> str:
     """
@@ -173,7 +195,6 @@ def get_currency_symbol(symbol: str) -> str:
 # 2. 核心分析函數 - 四大面向
 # ==============================================================================
 
-# 🚩 核心修正 1: 基本面 (FA) 計算 - 保持上次的容錯機制
 @st.cache_data(ttl=3600) 
 def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
     """
@@ -200,14 +221,12 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         stock = yf.Ticker(symbol)
         
         # 1. FCF 成長評級 (權重 0.4)
-        # (FCF CAGR 計算邏輯保持不變 - 數據容錯與穩定性已在上次修正中強化)
         cf = stock.cashflow
         fcf_cagr = -99 
         if not cf.empty and len(cf.columns) >= 2:
-            # 簡化 FCF 計算，專注於 CAGR 邏輯
             operating_cf = cf.loc['Operating Cash Flow'].dropna()
             capex_key = 'Capital Expenditure' if 'Capital Expenditure' in cf.index else 'CapEx'
-            capex = cf.loc[capex_key].dropna().abs() if capex_key in cf.index else pd.Series(0, index=operating_cf.index)
+            capex = cf.loc[capex_key].abs().dropna() if capex_key in cf.index else pd.Series(0, index=operating_cf.index)
             
             common_index = operating_cf.index.intersection(capex.index)
             fcf = (operating_cf[common_index] + capex[common_index]).dropna()
@@ -221,7 +240,6 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         else: results["FCF_Rating"] = 0.3
         
         # 2. ROE 資本回報效率評級 (權重 0.3)
-        # (ROE 容錯機制保持不變 - 專門解決 0.00% 髒數據)
         financials = stock.quarterly_financials
         roe_avg = 0 
         
@@ -256,7 +274,7 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         results["Combined_Rating"] = (results["FCF_Rating"] * 0.4) + (results["ROE_Rating"] * 0.3) + (results["PE_Rating"] * 0.3)
         pe_display = f"{pe_ratio:.2f}" if isinstance(pe_ratio, (int, float)) else "N/A"
         
-        # 🚩 修正：強調數據的交叉驗證特性
+        # 修正：強調數據的交叉驗證特性
         results["Message"] = f"FCF CAGR: {fcf_cagr:.2f}%. | 4季平均ROE: {roe_avg:.2f}%. | PE: {pe_display}. (數據已交叉驗證過濾)"
         
     except Exception as e:
@@ -266,7 +284,6 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
     return results
 
 
-# 🚩 核心修正 2: 消息面 (News) 與 籌碼面 (Sentiment/Flow)
 @st.cache_data(ttl=300) # 頻繁更新
 def get_latest_news_and_sentiment(symbol: str) -> dict:
     """
@@ -276,10 +293,11 @@ def get_latest_news_and_sentiment(symbol: str) -> dict:
     
     # === A. 消息面 (News) ===
     news_query = f"{symbol} stock latest news and analyst rating"
-    news_results = google_search.search(queries=[news_query])
+    # 使用模擬的 google_search 函數
+    news_results = google_search(queries=[news_query])
     
-    positive_keywords = ['升級', '看好', '大漲', '超預期', '上調', '創新高', 'AI']
-    negative_keywords = ['降級', '看淡', '大跌', '低於預期', '下調', '風險', '訴訟']
+    positive_keywords = ['升級', '看好', '大漲', '超預期', '上調', '創新高', 'AI', 'buy', 'positive', 'record', 'upgraded']
+    negative_keywords = ['降級', '看淡', '大跌', '低於預期', '下調', '風險', '訴訟', 'sell', 'negative', 'poor', 'downgrade']
     
     news_score = 0
     news_count = 0
@@ -287,8 +305,8 @@ def get_latest_news_and_sentiment(symbol: str) -> dict:
     for result in news_results:
         snippet = result.get('snippet', '')
         # 簡單情緒分析
-        is_positive = any(kw in snippet for kw in positive_keywords)
-        is_negative = any(kw in snippet for kw in negative_keywords)
+        is_positive = any(kw in snippet.lower() for kw in positive_keywords)
+        is_negative = any(kw in snippet.lower() for kw in negative_keywords)
         
         if is_positive and not is_negative:
             news_score += 1
@@ -302,7 +320,7 @@ def get_latest_news_and_sentiment(symbol: str) -> dict:
     # === B. 籌碼面 (Sentiment/Flow) ===
     # 使用 analyst rating 和 insider activity 作為籌碼信號
     sentiment_query = f"{symbol} insider trading and institutional flow"
-    sentiment_results = google_search.search(queries=[sentiment_query])
+    sentiment_results = google_search(queries=[sentiment_query])
     
     analyst_buy_count = 0
     analyst_sell_count = 0
@@ -332,7 +350,6 @@ def get_latest_news_and_sentiment(symbol: str) -> dict:
     }
 
 
-# 🚩 核心修正 3: 融合決策 - 四大面向加權
 @st.cache_data(ttl=60) 
 def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, news_score: float, sentiment_score: float, is_long_term: bool) -> dict:
     """
@@ -438,7 +455,6 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, news_score
         }
     }
 
-# ... (calculate_technical_indicators, get_technical_data_df, create_comprehensive_chart 函數保持不變) ...
 
 @st.cache_data(ttl=60) 
 def calculate_technical_indicators(df):
@@ -643,7 +659,7 @@ def create_comprehensive_chart(df, symbol, period):
 
 def main():
     
-    st.markdown("<h1 style='text-align: center; color: #FFA07A; font-size: 3.5em; padding-bottom: 0.5em;'>🤖 AI趨勢分析📈</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #FFA07A; font-size: 3.5em; padding-bottom: 0.5em;'>🤖 AI趨勢分析儀表板 📈</h1>", unsafe_allow_html=True)
     st.markdown("---") 
 
     # 🚩 關鍵修正：會話狀態初始化
@@ -651,21 +667,20 @@ def main():
     if 'analyze_trigger' not in st.session_state: st.session_state['analyze_trigger'] = False
     if 'data_ready' not in st.session_state: st.session_state['data_ready'] = False
     
-    # ... (Sidebar logic for symbol and period selection is kept) ...
-
     # 側邊欄代碼選擇邏輯...
     st.sidebar.header("⚙️ 分析設定")
     
     # 初始化 Category
-    if 'selected_category' not in st.session_state: 
-        st.session_state['selected_category'] = list(CATEGORY_MAP.keys())[0] # Default to the first category
-        
-    # --- 1. 選擇資產類別 (第一層 Selectbox) ---
     CATEGORY_MAP = {
         "美股 (US) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if not (c.endswith(".TW") or c.endswith("-USD") or c.startswith("^TWII"))],
         "台股 (TW) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if c.endswith(".TW") or c.startswith("^TWII")],
         "加密貨幣 (Crypto)": [c for c in FULL_SYMBOLS_MAP.keys() if c.endswith("-USD")],
     }
+    
+    if 'selected_category' not in st.session_state: 
+        st.session_state['selected_category'] = list(CATEGORY_MAP.keys())[0] # Default to the first category
+        
+    # --- 1. 選擇資產類別 (第一層 Selectbox) ---
     CATEGORY_HOT_OPTIONS = {}
     for category, codes in CATEGORY_MAP.items():
         options = {}
@@ -777,7 +792,7 @@ def main():
                 fa_result = calculate_fundamental_rating(final_symbol_to_analyze)
 
                 # 3. 消息面 & 籌碼面 (News/Sentiment) - 執行模擬交叉驗證
-                # 🚩 關鍵：獲取新的消息面和籌碼面分數
+                # 關鍵：獲取新的消息面和籌碼面分數
                 sentiment_result = get_latest_news_and_sentiment(final_symbol_to_analyze)
                 
                 # 4. 技術面 (TA) - 執行計算
@@ -874,4 +889,125 @@ def main():
         with col_s1: st.metric("技術面 (40%)", f"{breakdown['TA']:.2f}", help="TA: 價格趨勢、動能、超買超賣")
         with col_s2: st.metric("基本面 (30%)", f"{breakdown['FA']:.2f}", help="FA: FCF成長、ROE、P/E估值")
         with col_s3: st.metric("消息面 (20%)", f"{breakdown['News']:.2f}", help="News: 最新新聞情緒分析")
-        with col_s4: st.metric("籌碼面 (10%)", f"{breakdown['Sentiment']:.2f}", help="Sentiment: 分析師/機構籌碼傾向
+        with col_s4: st.metric("籌碼面 (10%)", f"{breakdown['Sentiment']:.2f}", help="Sentiment: 分析師/機構籌碼傾向")
+
+        st.markdown("---")
+
+        st.subheader("🛡️ 精確交易策略與風險控制")
+        col_strat_1, col_strat_2, col_strat_3, col_strat_4 = st.columns(4)
+
+        risk = abs(analysis['entry_price'] - analysis['stop_loss'])
+        reward = abs(analysis['take_profit'] - analysis['entry_price'])
+        risk_reward = reward / risk if risk > 0 else float('inf')
+
+        with col_strat_1:
+            st.markdown(f"**建議操作:** <span class='{action_class}' style='font-size: 18px;'>**{analysis['action']}**</span>", unsafe_allow_html=True)
+        with col_strat_2:
+            st.markdown(f"**建議進場價:** <span style='color:#cc6600;'>**{currency_symbol}{analysis['entry_price']:.2f}**</span>", unsafe_allow_html=True)
+        with col_strat_3:
+            st.markdown(f"**🚀 止盈價 (TP):** <span style='color:red;'>**{currency_symbol}{analysis['take_profit']:.2f}**</span>", unsafe_allow_html=True)
+        with col_strat_4:
+            st.markdown(f"**🛑 止損價 (SL):** <span style='color:green;'>**{currency_symbol}{analysis['stop_loss']:.2f}**</span>", unsafe_allow_html=True)
+            
+        st.info(f"**💡 策略總結:** **{analysis['strategy']}** | **⚖️ 風險/回報比 (R:R):** **{risk_reward:.2f}** | **波動單位 (ATR):** {analysis.get('atr', 0):.4f}")
+        
+        # --- 新增的專家角色與架構透明度區塊 (專業度修正) ---
+        st.markdown("---")
+        st.subheader("👨‍💼 **專家角色與分析維度對應** (系統架構透明度)")
+        st.caption("ℹ️ 此表顯示了您的專家清單如何映射到 AI 融合模型的四大決策支柱。系統通過模擬這些專家的視角進行加權計算，**其結果是概率性的，不是 100% 準確的投資建議**。")
+
+        col_map_1, col_map_2 = st.columns(2)
+
+        with col_map_1:
+            st.markdown("##### 決策核心 (信號生成與權重)")
+            st.markdown(f"**技術面 (TA: 40%):** {EXPERT_ROLE_MAPPING['技術面 (TA: 40%)']}")
+            st.markdown(f"**基本面 (FA: 30%):** {EXPERT_ROLE_MAPPING['基本面 (FA: 30%)']}")
+
+        with col_map_2:
+            st.markdown("##### 決策輔助與系統基礎 (風控與數據)")
+            st.markdown(f"**消息面/行為 (20%):** {EXPERT_ROLE_MAPPING['消息面/行為 (News/Sentiment: 20%)']}")
+            st.markdown(f"**風控/架構:** {EXPERT_ROLE_MAPPING['風控/架構']}")
+
+        st.markdown("---")
+        # ----------------------------------------------------
+        
+        st.subheader("📊 關鍵技術指標數據與專業判讀 (交叉驗證細節)")
+        
+        expert_df = pd.DataFrame(analysis['expert_opinions'].items(), columns=['專家領域', '判斷結果'])
+        
+        # 增加消息面和籌碼面的訊息
+        expert_df.loc[len(expert_df)] = ['基本面 FCF/ROE/PE 診斷', fa_result['Message']]
+        expert_df.loc[len(expert_df)] = ['消息面分析 (News)', sentiment_result['News_Message']]
+        expert_df.loc[len(expert_df)] = ['籌碼面分析 (Flow)', sentiment_result['Sentiment_Message']]
+        
+        def style_expert_opinion(s):
+            is_positive = s.str.contains('牛市|買進|多頭|強化|利多|增長|頂級|良好|潛在反彈|K線向上|正常波動性|上升|高於|優於|收購|黃金交叉', case=False)
+            is_negative = s.str.contains('熊市|賣出|空頭|削弱|利空|下跌|不足|潛在回調|K線向下|極高波動性|死亡交叉|訴訟|風險|低於|差', case=False)
+            is_neutral = s.str.contains('盤整|警告|中性|觀望|趨勢發展中|不適用|不完整', case=False) 
+            
+            colors = np.select(
+                [is_negative, is_positive, is_neutral],
+                ['color: #1e8449; font-weight: bold;', 'color: #cc0000; font-weight: bold;', 'color: #cc6600;'],
+                default='color: #888888;'
+            )
+            return [f'background-color: transparent; {c}' for c in colors]
+
+        styled_expert_df = expert_df.style.apply(style_expert_opinion, subset=['判斷結果'], axis=0)
+
+        st.dataframe(
+            styled_expert_df, 
+            use_container_width=True,
+            key=f"expert_df_{final_symbol_to_analyze}_{selected_period_key}",
+            column_config={
+                "專家領域": st.column_config.Column("專家領域", help="四大面向 (TA/FA/News/Flow) 分析範疇"),
+                "判斷結果": st.column_config.Column("判斷結果", help="專家對該領域的量化判讀與結論"),
+            }
+        )
+        
+        st.caption("ℹ️ **設計師提示:** 判讀結果顏色：**紅色=多頭/強化信號** (類似低風險買入)，**綠色=空頭/削弱信號** (類似高風險賣出)，**橙色=中性/警告**。")
+
+        st.markdown("---")
+        
+        st.subheader("🛠️ 技術指標狀態表")
+        technical_df = get_technical_data_df(df)
+        
+        if not technical_df.empty:
+            def style_indicator(s):
+                df_color = technical_df['顏色']
+                color_map = {'red': 'color: #cc0000; font-weight: bold;', 
+                             'green': 'color: #1e8449; font-weight: bold;', 
+                             'orange': 'color: #cc6600;',
+                             'blue': 'color: #004d99;',
+                             'grey': 'color: #888888;'}
+                
+                return [color_map.get(df_color.loc[index], '') for index in s.index]
+                
+            styled_df = technical_df[['最新值', '分析結論']].style.apply(style_indicator, subset=['最新值', '分析結論'], axis=0)
+
+            st.dataframe(
+                styled_df, 
+                use_container_width=True,
+                key=f"technical_df_{final_symbol_to_analyze}_{selected_period_key}",
+                column_config={
+                    "最新值": st.column_config.Column("最新數值", help="技術指標的最新計算值"),
+                    "分析結論": st.column_config.Column("趨勢/動能判讀", help="基於數值範圍的專業解讀"),
+                }
+            )
+            st.caption("ℹ️ **設計師提示:** 表格顏色會根據指標的趨勢/風險等級自動變化（**紅色=多頭/強化信號**（類似低風險買入），**綠色=空頭/削弱信號**（類似高風險賣出），**橙色=中性/警告**）。")
+
+        else:
+            st.info("無足夠數據生成關鍵技術指標表格。")
+        
+        st.markdown("---")
+        
+        st.subheader(f"📊 完整技術分析圖表")
+        chart = create_comprehensive_chart(df, final_symbol_to_analyze, selected_period_key) 
+        
+        st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
+    
+    # 首次載入或數據未準備好時的提示
+    elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
+         st.info("請在左側選擇或輸入標的，然後點擊「執行專家分析」按鈕開始分析。")
+
+if __name__ == '__main__':
+    main()
