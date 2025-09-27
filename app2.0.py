@@ -240,24 +240,25 @@ def get_company_info(symbol):
 def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
     """
     計算公司的基本面評級 (FCF + ROE + P/E)。
+    並針對非個股/加密貨幣進行 FA 雜訊去除。
     """
     results = {
         "FCF_Rating": 0.0, "ROE_Rating": 0.0, "PE_Rating": 0.0, 
         "Combined_Rating": 0.0, "Message": ""
     }
     
-    # === 修正後的非個股/難以分析的資產豁免邏輯 ===
+    # === 非個股/難以分析的資產豁免邏輯 (FA 雜訊去除) ===
     
     if '-USD' in symbol: # 針對加密貨幣
         results["Combined_Rating"] = 0.5
-        results["Message"] = "加密貨幣無傳統基本面 (FCF/ROE/PE) 依據，FA 評級設為中性 (0.5)。分析僅依賴 TA。"
+        results["Message"] = "加密貨幣無傳統基本面依據，FA 評級設為中性 (0.5)。分析僅依賴 TA/Fibonacci。"
         return results
     
     # 針對台灣個股 (非指數/ETF，通常數據不完整或難以取得)
     if symbol.endswith('.TW') and not any(idx in symbol for idx in ['00', '^']): 
         # 台灣個股由於 yfinance 數據穩定性問題，一律視為中性
         results["Combined_Rating"] = 0.5
-        results["Message"] = "台灣個股的基本面數據可能不完整，FA 評級設為中性 (0.5)。分析主要依賴 TA。"
+        results["Message"] = "台灣個股的基本面數據可能不完整，FA 評級設為中性 (0.5)。分析主要依賴 TA/Fibonacci。"
         return results
         
     if any(ext in symbol for ext in ['^', '00']): # 指數/ETF
@@ -362,7 +363,7 @@ def calculate_technical_indicators(df):
 @st.cache_data(ttl=60) 
 def calculate_fibonacci_levels(df: pd.DataFrame) -> dict:
     """
-    新增功能：計算當前數據範圍內的費波那契回撤線。
+    計算當前數據範圍內的費波那契回撤線，並返回最高/最低價供擴展計算。
     """
     if df.empty or len(df) < 2:
         return {}
@@ -372,6 +373,7 @@ def calculate_fibonacci_levels(df: pd.DataFrame) -> dict:
     min_price = df['Low'].min()
     price_range = max_price - min_price
     
+    # 1. 回撤位 (Retracement: 供圖表繪製)
     levels = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0]
     fib_levels = {}
     
@@ -379,35 +381,36 @@ def calculate_fibonacci_levels(df: pd.DataFrame) -> dict:
         # 計算回撤位：從低點 (0%) 到高點 (100%)
         for level_ratio in levels:
             level_price = min_price + (price_range * level_ratio)
-            fib_levels[f"{level_ratio*100:.1f}%"] = level_price
+            # 使用 Retracement_X% 作為 key 避免與 TP 混淆
+            fib_levels[f"Retracement_{level_ratio*100:.1f}%"] = level_price
+            
+    # 2. 傳遞波段資訊供信號生成函數計算擴展
+    fib_levels["Max_Price"] = max_price
+    fib_levels["Min_Price"] = min_price
             
     return fib_levels
 
 # ==============================================================================
-# 4. 融合決策與信號生成 (FA + TA 專注策略)
+# 4. 融合決策與信號生成 (FA + TA + Fibonacci 專注策略)
 # ==============================================================================
 
 # 🚩 數據處理緩存，保持穩定
 @st.cache_data(ttl=60) 
-def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_term: bool) -> dict:
+def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_term: bool, fib_levels: dict) -> dict:
     """
-    生成融合 FA/TA 的最終交易決策、信心度與風控參數。
+    生成融合 FA/TA/Fibonacci 的最終交易決策、信心度與風控參數。
     Score 範圍: [-10, 10]
     """
     if df.empty or len(df) < 2:
-        return {'recommendation': "數據不足，觀望", 'confidence': 50, 'score': 0, 'action': "觀望", 'atr': 0, 'entry_price': 0, 'stop_loss': 0, 'take_profit': 0, 'strategy': "N/A", 'expert_opinions': {}, 'current_price': 0, 'action_color': 'orange'}
+        # 使用新的 TP 格式
+        return {'recommendation': "數據不足，觀望", 'confidence': 50, 'score': 0, 'action': "觀望", 'atr': 0, 'entry_price': 0, 'stop_loss': 0, 'TP1': 0, 'TP2': 0, 'TP3': 0, 'R_R_TP1': 0, 'R_R_Minimum': 1.5, 'strategy': "N/A", 'expert_opinions': {}, 'current_price': 0, 'action_color': 'orange'}
 
     latest = df.iloc[-1]
     previous = df.iloc[-2]
     current_price = latest['Close']
     
-    # 🎯 基於 ATR 的精確風控參數 (R:R=2:1)
-    atr = latest.get('ATR', current_price * 0.015) 
-    risk_dist = 2 * atr 
-    risk_reward = 2 
-    
     score = 0
-    strategy_label = "TA 動能策略"
+    strategy_label = "FA/TA/Fibonacci 融合策略"
     expert_opinions = {}
     FA_THRESHOLD = 0.7 
     
@@ -467,7 +470,7 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
             expert_opinions['基本面驗證 (FA)'] = "FA 良好評級，溫和強化多頭信心"
         elif fa_rating < FA_THRESHOLD and fa_rating > 0.6: 
             # FA 中性 (0.5)，不加分，但也不扣分，除非 TA 趨勢極差
-            expert_opinions['基本面驗證 (FA)'] = "FA 中性評級 (或數據不適用)，TA 獨立分析"
+            expert_opinions['基本面驗證 (FA)'] = "FA 中性評級 (或數據不適用)，TA/Fibonacci 獨立分析"
         elif fa_rating < FA_THRESHOLD and score > 0: 
             # FA 差 (低於 0.3)，且 TA 鼓勵買入，則削弱 TA 信號
             score = max(0, score - 2) 
@@ -476,36 +479,93 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
         expert_opinions['基本面驗證 (FA)'] = "短期分析，FA 不參與計分"
 
 
-    # === (D) 最終決策與風控設定 ===
+    # === (C) 初始決策與風控設定 (預先篩選) ===
     
-    # 最終決策
+    # 初始決策 (Pre-filter)
     if score >= 6: recommendation, action, action_color = "高度信心買入", "買進 (Buy)", 'red'
     elif score >= 2: recommendation, action, action_color = "買入建議", "買進 (Buy)", 'red'
     elif score <= -6: recommendation, action, action_color = "高度信心賣出", "賣出 (Sell/Short)", 'green'
     elif score <= -2: recommendation, action, action_color = "賣出建議", "賣出 (Sell/Short)", 'green'
     else: recommendation, action, action_color = "觀望/中性", "觀望", 'orange'
 
-    # 風控價格
+    # 1. 基礎 ATR 止損計算 (SL)
+    atr = latest.get('ATR', current_price * 0.015) 
+    risk_dist = 1.5 * atr # 使用 1.5倍 ATR 作為基礎風險距離 (更靈活)
     entry_suggestion = current_price
-    if '買進' in action:
-        stop_loss = current_price - risk_dist
-        take_profit = current_price + (risk_dist * risk_reward)
-    elif '賣出' in action:
-        stop_loss = current_price + risk_dist
-        take_profit = current_price - (risk_dist * risk_reward)
-    else:
-        # 觀望狀態下，止損止盈範圍縮小至 1 倍 ATR 
-        stop_loss = current_price - atr
-        take_profit = current_price + atr
     
-    confidence = np.clip(50 + score * 5, 30, 95) # 將分數轉換為信心度 (30%-95% 之間)
-    
-    expert_opinions['最終策略與結論'] = f"{strategy_label}：{recommendation} (總量化分數: {score})"
+    tp_targets = {'TP1': 0.0, 'TP2': 0.0, 'TP3': 0.0}
+    R_R_TP1 = 0.0
+    R_R_Minimum = 1.5 # 最高信心交易的最低風險回報比要求 (1.5:1)
+    stop_loss = 0.0
+
+    # 2. 費波那契擴展目標 (TP1, TP2, TP3) - 僅在買賣信號時計算
+    if '買進' in action or '賣出' in action:
+        max_price = fib_levels.get("Max_Price", current_price)
+        min_price = fib_levels.get("Min_Price", current_price)
+        price_range = max_price - min_price
+        extension_ratios = [1.272, 1.618, 2.0]
+        
+        if '買進' in action:
+            stop_loss = current_price - risk_dist
+            
+            if price_range > 0:
+                # 牛市擴展 (從 Max 向上計算)
+                tp_targets['TP1'] = max_price + (price_range * (extension_ratios[0] - 1.0))
+                tp_targets['TP2'] = max_price + (price_range * (extension_ratios[1] - 1.0))
+                tp_targets['TP3'] = max_price + (price_range * (extension_ratios[2] - 1.0))
+            else: # 退路：使用 ATR 倍數
+                tp_targets['TP1'] = current_price + risk_dist * 1.5
+                tp_targets['TP2'] = current_price + risk_dist * 2.5
+                tp_targets['TP3'] = current_price + risk_dist * 3.5
+
+            # 計算 R:R (TP1)
+            risk = current_price - stop_loss
+            reward = tp_targets['TP1'] - current_price
+            R_R_TP1 = reward / risk if risk > 0 and reward > 0 else 0.0
+
+        elif '賣出' in action:
+            stop_loss = current_price + risk_dist
+            
+            if price_range > 0:
+                # 熊市擴展 (從 Min 向下計算)
+                tp_targets['TP1'] = min_price - (price_range * (extension_ratios[0] - 1.0))
+                tp_targets['TP2'] = min_price - (price_range * (extension_ratios[1] - 1.0))
+                tp_targets['TP3'] = min_price - (price_range * (extension_ratios[2] - 1.0))
+            else: # 退路：使用 ATR 倍數
+                tp_targets['TP1'] = current_price - risk_dist * 1.5
+                tp_targets['TP2'] = current_price - risk_dist * 2.5
+                tp_targets['TP3'] = current_price - risk_dist * 3.5
+                
+            # 計算 R:R (TP1)
+            risk = stop_loss - current_price
+            reward = current_price - tp_targets['TP1']
+            R_R_TP1 = reward / risk if risk > 0 and reward > 0 else 0.0
+
+    else: # 觀望狀態下的 SL/TP
+        stop_loss = current_price - atr * 0.5 # 輕微 SL
+        tp_targets = {'TP1': current_price + atr * 0.5, 'TP2': 0.0, 'TP3': 0.0}
+        
+    # === (D) 應用 R:R 結構性篩選 (最高信心與準確度的關鍵) ===
+    is_r_r_pass = R_R_TP1 >= R_R_Minimum
+
+    if not is_r_r_pass and ('買進' in action or '賣出' in action):
+        # 如果 TA 建議買賣，但結構性 R:R 驗證失敗，則降級為觀望
+        recommendation, action, action_color = "R:R 驗證失敗，降級觀望", "觀望", 'orange'
+        score = max(0, score - 5) # 大幅降低分數以反映信號質量差
+        expert_opinions['最終策略與結論'] = f"結構性 R:R 驗證失敗 (R/R {R_R_TP1:.2f} < {R_R_Minimum:.1f})，信號降級為觀望 (總量化分數: {score})"
+        tp_targets = {'TP1': 0.0, 'TP2': 0.0, 'TP3': 0.0} # 觀望狀態下清除 TP 目標
+        stop_loss = current_price - atr * 0.5 # 恢復觀望的止損
+        R_R_TP1 = 0.0
+
+    # 信心度轉換 (應用 R:R 篩選後的 score)
+    confidence = np.clip(50 + score * 5, 30, 95) 
+
     
     return {
         'recommendation': recommendation, 'confidence': confidence, 'score': score, 
         'current_price': current_price, 'entry_price': entry_suggestion, 
-        'stop_loss': stop_loss, 'take_profit': take_profit, 'action': action, 
+        'stop_loss': stop_loss, **tp_targets, 
+        'action': action, 'R_R_TP1': R_R_TP1, 'R_R_Minimum': R_R_Minimum, 
         'atr': atr, 'strategy': strategy_label, 'expert_opinions': expert_opinions, 'action_color': action_color
     }
 
@@ -603,7 +663,7 @@ def get_technical_data_df(df):
     return df_table[['最新值', '分析結論', '顏色']]
 
 # 🚩 確保圖表函數的 key 屬性與調用時一致，避免 DOM 渲染錯誤
-def create_comprehensive_chart(df, symbol, period, fib_levels):
+def create_comprehensive_chart(df, symbol, period, fib_levels, tp_targets): # 新增 tp_targets 參數
     """創建詳細技術分析圖表 (保持價格 K 線顏色為紅漲綠跌)，並新增費波那契線"""
     if df.empty: return go.Figure()
         
@@ -630,21 +690,43 @@ def create_comprehensive_chart(df, symbol, period, fib_levels):
 
     # === 新增：費波那契回撤線 (Fibonacci Retracement) ===
     fib_colors = {
-        '23.6%': '#FF9900', # 橙 (淺)
-        '38.2%': '#009900', # 綠 (深)
-        '50.0%': '#0000FF', # 藍
-        '61.8%': '#990099', # 紫 (重要)
-        '78.6%': '#FF00FF', # 洋紅
+        'Retracement_23.6%': '#FF9900', # 橙 (淺)
+        'Retracement_38.2%': '#009900', # 綠 (深)
+        'Retracement_50.0%': '#0000FF', # 藍
+        'Retracement_61.8%': '#990099', # 紫 (重要)
+        'Retracement_78.6%': '#FF00FF', # 洋紅
     }
     
     for level, price in fib_levels.items():
-        if level in fib_colors:
+        if level.startswith("Retracement") and level in fib_colors:
             fig.add_hline(
                 y=price, 
                 line_dash="dot", 
                 line_color=fib_colors.get(level, '#888888'),
-                annotation_text=f"Fib {level}: {price:.2f}",
+                annotation_text=f"Fib {level.split('_')[1]}: {price:.2f}",
                 annotation_position="bottom right",
+                row=1, col=1
+            )
+            
+    # === 新增：費波那契擴展目標線 (Fibonacci Extension Targets) ===
+    tp_targets_plot = {k: v for k, v in tp_targets.items() if k.startswith('TP') and v > 0}
+    tp_colors = {
+        'TP1': 'red', # 建議止盈線
+        'TP2': 'orange',
+        'TP3': 'darkred',
+    }
+    
+    if tp_targets_plot:
+        is_buy_signal = df['Close'].iloc[-1] < tp_targets_plot.get('TP1', 0) 
+        
+        for target, price in tp_targets_plot.items():
+            fig.add_hline(
+                y=price, 
+                line_dash="dash", 
+                line_color=tp_colors.get(target, 'red'),
+                line_width=2,
+                annotation_text=f"{target} (Ext {target[2:]}) : {price:.2f}",
+                annotation_position="top left" if is_buy_signal else "bottom left",
                 row=1, col=1
             )
             
@@ -679,7 +761,7 @@ def create_comprehensive_chart(df, symbol, period, fib_levels):
     fig.update_layout(
         height=950, 
         showlegend=True, 
-        title_text=f"📈 {symbol} - 完整技術分析圖 (含費波那契)", # 標題新增費波那契提示
+        title_text=f"📈 {symbol} - 完整技術分析圖 (含費波那契 TP 目標)", # 標題新增費波那契提示
         xaxis_rangeslider_visible=False,
         template="plotly_white",
         margin=dict(l=20, r=20, t=50, b=20)
@@ -807,17 +889,19 @@ def main():
     
     # --- 5. 開始分析 (Button) ---
     st.sidebar.markdown("5. **開始分析**")
-    analyze_button_clicked = st.sidebar.button("📊 執行專家分析", type="primary", key="main_analyze_button") 
+    # 修正點 1: 按鈕文字
+    analyze_button_clicked = st.sidebar.button("📊 執行 AI 分析", type="primary", key="main_analyze_button") 
 
     # === 主要分析邏輯 (Main Analysis Logic) ===
     if analyze_button_clicked or st.session_state['analyze_trigger']:
         
-        # 🚩 關鍵修正：啟動分析時，將數據準備狀態設為 False
+        # 關鍵修正：啟動分析時，將數據準備狀態設為 False
         st.session_state['data_ready'] = False
         st.session_state['analyze_trigger'] = False 
         
         try:
-            with st.spinner(f"🔍 正在啟動顧問團，獲取並分析 **{final_symbol_to_analyze}** 的數據 ({selected_period_key})..."):
+            # 修正點 2: Spinner 提示文字
+            with st.spinner(f"🔍 正在啟動 AI 引擎，獲取並分析 **{final_symbol_to_analyze}** 的數據 ({selected_period_key})..."):
                 
                 df = get_stock_data(final_symbol_to_analyze, yf_period, yf_interval) 
                 
@@ -841,16 +925,17 @@ def main():
                     df = calculate_technical_indicators(df) 
                     fa_result = calculate_fundamental_rating(final_symbol_to_analyze)
                     
-                    # === 新增費波那契計算 ===
+                    # === 新增費波那契計算 (Max/Min) ===
                     fib_levels = calculate_fibonacci_levels(df) 
 
                     analysis = generate_expert_fusion_signal(
                         df, 
                         fa_rating=fa_result['Combined_Rating'], 
-                        is_long_term=is_long_term
+                        is_long_term=is_long_term,
+                        fib_levels=fib_levels # 傳遞波段資訊
                     )
                     
-                    # 🚩 關鍵修正：將所有分析結果存入 Session State
+                    # 關鍵修正：將所有分析結果存入 Session State
                     st.session_state['analysis_results'] = {
                         'df': df,
                         'company_info': company_info,
@@ -859,10 +944,10 @@ def main():
                         'analysis': analysis,
                         'selected_period_key': selected_period_key,
                         'final_symbol_to_analyze': final_symbol_to_analyze,
-                        'fib_levels': fib_levels # 新增
+                        'fib_levels': fib_levels 
                     }
                     
-                    # 🚩 關鍵修正：所有數據準備好後，將狀態設為 True
+                    # 關鍵修正：所有數據準備好後，將狀態設為 True
                     st.session_state['data_ready'] = True
 
         except Exception as e:
@@ -885,7 +970,8 @@ def main():
         
         # --- 結果呈現 ---
         
-        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze}) 專家交叉驗證趨勢分析")
+        # 修正點 3: 結果標題
+        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze}) AI 交叉驗證趨勢分析")
         
         # 計算漲跌幅
         current_price = analysis['current_price']
@@ -929,29 +1015,42 @@ def main():
             st.markdown(f"<p class='{action_class}' style='font-size: 20px;'>{analysis['action']}</p>", unsafe_allow_html=True)
         
         with col_core_3: 
-            st.metric("🔥 總量化評分", f"{analysis['score']}", help="FA/TA 融合策略總分 (正數看漲)")
+            st.metric("🔥 總量化評分", f"{analysis['score']}", help="FA/TA/Fibonacci 融合策略總分 (正數看漲)")
         with col_core_4: 
             st.metric("🛡️ 信心指數", f"{analysis['confidence']:.0f}%", help="分析團隊對此建議的信心度")
         
         st.markdown("---")
 
-        st.subheader("🛡️ 精確交易策略與風險控制")
-        col_strat_1, col_strat_2, col_strat_3, col_strat_4 = st.columns(4)
-
-        risk = abs(analysis['entry_price'] - analysis['stop_loss'])
-        reward = abs(analysis['take_profit'] - analysis['entry_price'])
-        risk_reward = reward / risk if risk > 0 else float('inf')
+        st.subheader("🛡️ 精確交易策略與風險控制 (Fibonacci 結構性目標)")
+        col_strat_1, col_strat_2, col_strat_3, col_strat_4, col_strat_5 = st.columns(5) # 新增一個欄位來顯示 TP2
 
         with col_strat_1:
             st.markdown(f"**建議操作:** <span class='{action_class}' style='font-size: 18px;'>**{analysis['action']}**</span>", unsafe_allow_html=True)
         with col_strat_2:
             st.markdown(f"**建議進場價:** <span style='color:#cc6600;'>**{currency_symbol}{analysis['entry_price']:.2f}**</span>", unsafe_allow_html=True)
         with col_strat_3:
-            st.markdown(f"**🚀 止盈價 (TP):** <span style='color:red;'>**{currency_symbol}{analysis['take_profit']:.2f}**</span>", unsafe_allow_html=True)
+            st.markdown(f"**🚀 止盈價 TP1 (1.272):** <span style='color:red;'>**{currency_symbol}{analysis['TP1']:.2f}**</span>", unsafe_allow_html=True) 
         with col_strat_4:
+            st.markdown(f"**🎯 止盈價 TP2 (1.618):** <span style='color:orange;'>**{currency_symbol}{analysis['TP2']:.2f}**</span>", unsafe_allow_html=True) 
+        with col_strat_5:
             st.markdown(f"**🛑 止損價 (SL):** <span style='color:green;'>**{currency_symbol}{analysis['stop_loss']:.2f}**</span>", unsafe_allow_html=True)
             
-        st.info(f"**💡 策略總結:** **{analysis['strategy']}** | **⚖️ 風險/回報比 (R:R):** **{risk_reward:.2f}** | **波動單位 (ATR):** {analysis.get('atr', 0):.4f}")
+        # R:R Check Status
+        if analysis['R_R_TP1'] >= analysis['R_R_Minimum']:
+            rr_status = f"✅ **通過結構性 R:R 驗證** (TP1 R:R ≥ {analysis['R_R_Minimum']:.1f})"
+            rr_color = "red"
+        elif analysis['R_R_TP1'] > 0:
+            rr_status = f"⚠️ **R:R 不足，降級觀望** (TP1 R:R < {analysis['R_R_Minimum']:.1f})"
+            rr_color = "orange"
+        else:
+            rr_status = "ℹ️ **觀望狀態，無 R:R 驗證**"
+            rr_color = "grey"
+            
+        st.info(f"**💡 策略總結:** **{analysis['strategy']}** | **⚖️ 實際 R:R (TP1):** **{analysis['R_R_TP1']:.2f}** | **{rr_status}**")
+        
+        # 顯示 TP3 作為額外資訊
+        if analysis['TP3'] > 0:
+            st.caption(f"**額外目標:** **TP3 (2.0 擴展)** 位於 **{currency_symbol}{analysis['TP3']:.2f}**")
         
         st.markdown("---")
         
@@ -963,7 +1062,7 @@ def main():
         def style_expert_opinion(s):
             is_positive = s.str.contains('牛市|買進|多頭|強化|利多|增長|頂級|良好|潛在反彈|K線向上|正常波動性', case=False)
             is_negative = s.str.contains('熊市|賣出|空頭|削弱|利空|下跌|不足|潛在回調|K線向下|極高波動性', case=False)
-            is_neutral = s.str.contains('盤整|警告|中性|觀望|趨勢發展中|不適用|不完整', case=False) 
+            is_neutral = s.str.contains('盤整|警告|中性|觀望|趨勢發展中|不適用|不完整|降級觀望', case=False) 
             
             colors = np.select(
                 [is_negative, is_positive, is_neutral],
@@ -1022,10 +1121,11 @@ def main():
         
         st.subheader("📏 費波那契回撤線 (Fibonacci Levels)")
         
-        fib_levels = results['fib_levels']
-        if fib_levels:
+        fib_levels_display = {k.split('_')[1]: v for k, v in results['fib_levels'].items() if k.startswith('Retracement')}
+
+        if fib_levels_display:
             fib_data = []
-            for level, price in fib_levels.items():
+            for level, price in fib_levels_display.items():
                 if level not in ['0.0%', '100.0%']: # 只顯示回撤位
                     fib_data.append([level, f"{currency_symbol}{price:,.2f}"])
             
@@ -1037,20 +1137,21 @@ def main():
                 use_container_width=True,
                 key=f"fib_df_{final_symbol_to_analyze}_{selected_period_key}"
             )
-            st.caption(f"ℹ️ **設計師提示:** 費波那契回撤線是根據當前圖表顯示的最高價 ({currency_symbol}{fib_levels.get('100.0%', 0):.2f}) 和最低價 ({currency_symbol}{fib_levels.get('0.0%', 0):.2f}) 自動計算。這些價格點通常被視為潛在的支撐或壓力區間。")
+            st.caption(f"ℹ️ **設計師提示:** 費波那契回撤線是根據當前圖表顯示的最高價 ({currency_symbol}{results['fib_levels'].get('Max_Price', 0):.2f}) 和最低價 ({currency_symbol}{results['fib_levels'].get('Min_Price', 0):.2f}) 自動計算。這些價格點通常被視為潛在的支撐或壓力區間。")
         else:
             st.info("無足夠數據計算費波那契回撤線。")
         
         st.markdown("---")
 
         st.subheader(f"📊 完整技術分析圖表")
-        chart = create_comprehensive_chart(df, final_symbol_to_analyze, selected_period_key, results['fib_levels']) 
+        chart = create_comprehensive_chart(df, final_symbol_to_analyze, selected_period_key, results['fib_levels'], analysis) # 傳遞 TP 目標
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
     
     # 首次載入或數據未準備好時的提示
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
-         st.info("請在左側選擇或輸入標的，然後點擊 **『執行專家分析』** 開始。")
+         # 修正點 4: 初始提示
+         st.info("請在左側選擇或輸入標的，然後點擊 **『執行 AI 分析』** 開始。")
 
 
 if __name__ == '__main__':
