@@ -423,7 +423,7 @@ def calculate_technical_indicators(df):
 
 
 # ==============================================================================
-# 4. 融合決策與信號生成 (FA + TA 專注策略)
+# 4. 融合決策與信號生成 (FA + TA 策略)
 # ==============================================================================
 
 # 🚩 數據處理緩存，保持穩定
@@ -434,7 +434,7 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     Score 範圍: [-10, 10]
     """
     if df.empty or len(df) < 2:
-        return {'recommendation': "數據不足，觀望", 'confidence': 50, 'score': 0, 'action': "觀望", 'atr': 0, 'entry_price': 0, 'stop_loss': 0, 'take_profit': 0, 'strategy': "N/A", 'expert_opinions': {}, 'current_price': 0, 'action_color': 'orange'}
+        return {'recommendation': "數據不足，觀望", 'confidence': 50, 'score': 0, 'action': "觀望", 'atr': 0, 'entry_price': 0, 'stop_loss': 0, 'take_profit': 0, 'strategy': "N/A", 'ai_opinions': {}, 'current_price': 0, 'action_color': 'orange'} # 變更: expert_opinions -> ai_opinions
 
     latest = df.iloc[-1]
     previous = df.iloc[-2]
@@ -447,7 +447,7 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     
     score = 0
     strategy_label = "TA 動能策略"
-    expert_opinions = {}
+    ai_opinions = {} # 變更: expert_opinions -> ai_opinions
     FA_THRESHOLD = 0.7 
     
     # === (A) 技術分析 TA Score (權重高) ===
@@ -456,10 +456,10 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     is_long_term_bull = latest.get('EMA_200', -1) > 0 and current_price > latest['EMA_200']
     if is_long_term_bull: 
         score += 4
-        expert_opinions['趨勢判斷 (EMA)'] = "長期牛市確立 (Price > EMA-200)"
+        ai_opinions['趨勢判斷 (EMA)'] = "長期牛市確立 (Price > EMA-200)"
     else:
         score = score - 1 # 趨勢不佳扣分
-        expert_opinions['趨勢判斷 (EMA)'] = "長期熊市/盤整"
+        ai_opinions['趨勢判斷 (EMA)'] = "長期熊市/盤整"
     
     # 2. MACD 動能轉折 (黃金/死亡交叉)
     macd_cross_buy = (latest['MACD_Line'] > latest['MACD_Signal']) and (previous['MACD_Line'] <= previous['MACD_Signal'])
@@ -467,31 +467,31 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
 
     if macd_cross_buy: 
         score += 3
-        expert_opinions['動能轉折 (MACD)'] = "MACD 黃金交叉 (買進信號)"
+        ai_opinions['動能轉折 (MACD)'] = "MACD 黃金交叉 (買進信號)"
     elif macd_cross_sell: 
         score -= 3
-        expert_opinions['動能轉折 (MACD)'] = "MACD 死亡交叉 (賣出信號)"
+        ai_opinions['動能轉折 (MACD)'] = "MACD 死亡交叉 (賣出信號)"
     elif latest['MACD_Hist'] > 0: 
         score += 1
-        expert_opinions['動能轉折 (MACD)'] = "動能柱持續增長 (> 0)"
+        ai_opinions['動能轉折 (MACD)'] = "動能柱持續增長 (> 0)"
     elif latest['MACD_Hist'] < 0: 
         score -= 1
-        expert_opinions['動能轉折 (MACD)'] = "動能柱持續減弱 (< 0)"
+        ai_opinions['動能轉折 (MACD)'] = "動能柱持續減弱 (< 0)"
         
     # 3. RSI 超買超賣與動能強度
     rsi = latest['RSI']
     if rsi < 30: 
         score += 2
-        expert_opinions['動能強度 (RSI)'] = "嚴重超賣 (潛在反彈)"
+        ai_opinions['動能強度 (RSI)'] = "嚴重超賣 (潛在反彈)"
     elif rsi > 70: 
         score -= 2
-        expert_opinions['動能強度 (RSI)'] = "嚴重超買 (潛在回調)"
+        ai_opinions['動能強度 (RSI)'] = "嚴重超買 (潛在回調)"
     elif rsi > 55: 
         score += 1
-        expert_opinions['動能強度 (RSI)'] = "強勢區間"
+        ai_opinions['動能強度 (RSI)'] = "強勢區間"
     elif rsi < 45: 
         score -= 1
-        expert_opinions['動能強度 (RSI)'] = "弱勢區間"
+        ai_opinions['動能強度 (RSI)'] = "弱勢區間"
     
     # === (B) 基本面 FA Score (僅長線有效，作為篩選器) ===
     
@@ -499,20 +499,20 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
         if fa_rating >= 0.9: 
             # 只有指數/ETF 才會到 1.0，給予最高加分
             score += 3 
-            expert_opinions['基本面驗證 (FA)'] = "FA 頂級評級，大幅強化多頭信心 (主要為指數/ETF)"
+            ai_opinions['基本面驗證 (FA)'] = "FA 頂級評級，大幅強化多頭信心 (主要為指數/ETF)"
         elif fa_rating >= FA_THRESHOLD: 
             # 正常美股個股可能達到此區間 (0.7 ~ 0.9)
             score += 1 
-            expert_opinions['基本面驗證 (FA)'] = "FA 良好評級，溫和強化多頭信心"
+            ai_opinions['基本面驗證 (FA)'] = "FA 良好評級，溫和強化多頭信心"
         elif fa_rating < FA_THRESHOLD and fa_rating > 0.6: 
             # FA 中性 (0.5)，不加分，但也不扣分，除非 TA 趨勢極差
-            expert_opinions['基本面驗證 (FA)'] = "FA 中性評級 (或數據不適用)，TA 獨立分析"
+            ai_opinions['基本面驗證 (FA)'] = "FA 中性評級 (或數據不適用)，TA 獨立分析"
         elif fa_rating < FA_THRESHOLD and score > 0: 
             # FA 差 (低於 0.3)，且 TA 鼓勵買入，則削弱 TA 信號
             score = max(0, score - 2) 
-            expert_opinions['基本面驗證 (FA)'] = "FA 評級差，削弱 TA 買入信號"
+            ai_opinions['基本面驗證 (FA)'] = "FA 評級差，削弱 TA 買入信號"
     else:
-        expert_opinions['基本面驗證 (FA)'] = "短期分析，FA 不參與計分"
+        ai_opinions['基本面驗證 (FA)'] = "短期分析，FA 不參與計分"
 
 
     # === (D) 最終決策與風控設定 ===
@@ -539,13 +539,13 @@ def generate_expert_fusion_signal(df: pd.DataFrame, fa_rating: float, is_long_te
     
     confidence = np.clip(50 + score * 5, 30, 95) # 將分數轉換為信心度 (30%-95% 之間)
     
-    expert_opinions['最終策略與結論'] = f"{strategy_label}：{recommendation} (總量化分數: {score})"
+    ai_opinions['最終策略與結論'] = f"{strategy_label}：{recommendation} (總量化分數: {score})" # 變更: expert_opinions -> ai_opinions
     
     return {
         'recommendation': recommendation, 'confidence': confidence, 'score': score, 
         'current_price': current_price, 'entry_price': entry_suggestion, 
         'stop_loss': stop_loss, 'take_profit': take_profit, 'action': action, 
-        'atr': atr, 'strategy': strategy_label, 'expert_opinions': expert_opinions, 'action_color': action_color
+        'atr': atr, 'strategy': strategy_label, 'expert_opinions': ai_opinions, 'action_color': action_color # 變更: expert_opinions -> ai_opinions
     }
 
 # ==============================================================================
@@ -829,7 +829,8 @@ def main():
     
     # --- 5. 開始分析 (Button) ---
     st.sidebar.markdown("5. **開始分析**")
-    analyze_button_clicked = st.sidebar.button("📊 執行專家分析", type="primary", key="main_analyze_button") 
+    # 🚩 修正: 執行專家分析 -> 執行AI分析
+    analyze_button_clicked = st.sidebar.button("📊 執行AI分析", type="primary", key="main_analyze_button") 
 
     # === 主要分析邏輯 (Main Analysis Logic) ===
     if analyze_button_clicked or st.session_state['analyze_trigger']:
@@ -839,7 +840,8 @@ def main():
         st.session_state['analyze_trigger'] = False 
         
         try:
-            with st.spinner(f"🔍 正在啟動顧問團，獲取並分析 **{final_symbol_to_analyze}** 的數據 ({selected_period_key})..."):
+            # 🚩 修正: 正在啟動顧問團 -> 正在啟動AI模型
+            with st.spinner(f"🔍 正在啟動AI模型，獲取並分析 **{final_symbol_to_analyze}** 的數據 ({selected_period_key})..."):
                 
                 df = get_stock_data(final_symbol_to_analyze, yf_period, yf_interval) 
                 
@@ -902,7 +904,8 @@ def main():
         
         # --- 結果呈現 ---
         
-        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze}) 專家融合分析")
+        # 🚩 修正: 專家融合分析 -> AI趨勢分析
+        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze}) AI趨勢分析")
         
         # 計算漲跌幅
         current_price = analysis['current_price']
@@ -948,7 +951,7 @@ def main():
         with col_core_3: 
             st.metric("🔥 總量化評分", f"{analysis['score']}", help="FA/TA 融合策略總分 (正數看漲)")
         with col_core_4: 
-            st.metric("🛡️ 信心指數", f"{analysis['confidence']:.0f}%", help="分析團隊對此建議的信心度")
+            st.metric("🛡️ 信心指數", f"{analysis['confidence']:.0f}%", help="AI對此建議的信心度") # 修正: 專家 -> AI
         
         st.markdown("---")
 
@@ -972,12 +975,13 @@ def main():
         
         st.markdown("---")
         
-        st.subheader("📊 關鍵技術指標數據與專業判讀 (交叉驗證細節)")
+        st.subheader("📊 關鍵技術指標數據與AI判讀 (交叉驗證細節)") # 修正: 專家判讀 -> AI判讀
         
-        expert_df = pd.DataFrame(analysis['expert_opinions'].items(), columns=['專家領域', '判斷結果'])
-        expert_df.loc[len(expert_df)] = ['基本面 FCF/ROE/PE 診斷', fa_result['Message']]
+        # 🚩 修正: 變量名 expert_df -> ai_df；列名 專家領域 -> AI領域
+        ai_df = pd.DataFrame(analysis['expert_opinions'].items(), columns=['AI領域', '判斷結果']) 
+        ai_df.loc[len(ai_df)] = ['基本面 FCF/ROE/PE 診斷', fa_result['Message']]
         
-        def style_expert_opinion(s):
+        def style_expert_opinion(s): # 雖然函數名未改，但內容已指向 AI
             is_positive = s.str.contains('牛市|買進|多頭|強化|利多|增長|頂級|良好|潛在反彈|K線向上|正常波動性', case=False)
             is_negative = s.str.contains('熊市|賣出|空頭|削弱|利空|下跌|不足|潛在回調|K線向下|極高波動性', case=False)
             is_neutral = s.str.contains('盤整|警告|中性|觀望|趨勢發展中|不適用|不完整', case=False) 
@@ -989,15 +993,15 @@ def main():
             )
             return [f'background-color: transparent; {c}' for c in colors]
 
-        styled_expert_df = expert_df.style.apply(style_expert_opinion, subset=['判斷結果'], axis=0)
+        styled_ai_df = ai_df.style.apply(style_expert_opinion, subset=['判斷結果'], axis=0) # 修正: styled_expert_df -> styled_ai_df
 
         st.dataframe(
-            styled_expert_df, 
+            styled_ai_df, # 修正: styled_expert_df -> styled_ai_df
             use_container_width=True,
-            key=f"expert_df_{final_symbol_to_analyze}_{selected_period_key}",
+            key=f"ai_df_{final_symbol_to_analyze}_{selected_period_key}", # 修正: expert_df -> ai_df
             column_config={
-                "專家領域": st.column_config.Column("專家領域", help="FA/TA 分析範疇"),
-                "判斷結果": st.column_config.Column("判斷結果", help="專家對該領域的量化判讀與結論"),
+                "AI領域": st.column_config.Column("AI領域", help="FA/TA 分析範疇"), # 修正: 專家領域 -> AI領域
+                "判斷結果": st.column_config.Column("判斷結果", help="AI對該領域的量化判讀與結論"), # 修正: 專家對該領域 -> AI對該領域
             }
         )
         
@@ -1044,7 +1048,8 @@ def main():
     
     # 首次載入或數據未準備好時的提示
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
-         st.info("請在左側選擇或輸入標的，然後點擊 **『執行專家分析』** 開始。")
+         # 修正: 執行專家分析 -> 執行AI分析
+         st.info("請在左側選擇或輸入標的，然後點擊 **『執行AI分析』** 開始。")
 
 
 if __name__ == '__main__':
@@ -1056,5 +1061,6 @@ if __name__ == '__main__':
     main()
     
     st.markdown("---")
-    st.markdown("⚠️ **免責聲明:** 本分析模型包含多位專家的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
+    # 修正: 多位專家 -> AI
+    st.markdown("⚠️ **免責聲明:** 本分析模型包含多位AI的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
     st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
