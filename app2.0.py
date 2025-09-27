@@ -359,6 +359,29 @@ def calculate_technical_indicators(df):
     df.dropna(how='all', subset=['Close', 'EMA_50', 'MACD_Hist', 'RSI', 'ATR'], inplace=True)
     return df
 
+@st.cache_data(ttl=60) 
+def calculate_fibonacci_levels(df: pd.DataFrame) -> dict:
+    """
+    新增功能：計算當前數據範圍內的費波那契回撤線。
+    """
+    if df.empty or len(df) < 2:
+        return {}
+    
+    # 簡化處理：取當前週期內的最高價和最低價作為擺動高低點
+    max_price = df['High'].max()
+    min_price = df['Low'].min()
+    price_range = max_price - min_price
+    
+    levels = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0]
+    fib_levels = {}
+    
+    if price_range > 0:
+        # 計算回撤位：從低點 (0%) 到高點 (100%)
+        for level_ratio in levels:
+            level_price = min_price + (price_range * level_ratio)
+            fib_levels[f"{level_ratio*100:.1f}%"] = level_price
+            
+    return fib_levels
 
 # ==============================================================================
 # 4. 融合決策與信號生成 (FA + TA 專注策略)
@@ -580,8 +603,8 @@ def get_technical_data_df(df):
     return df_table[['最新值', '分析結論', '顏色']]
 
 # 🚩 確保圖表函數的 key 屬性與調用時一致，避免 DOM 渲染錯誤
-def create_comprehensive_chart(df, symbol, period):
-    """創建詳細技術分析圖表 (保持價格 K 線顏色為紅漲綠跌)"""
+def create_comprehensive_chart(df, symbol, period, fib_levels):
+    """創建詳細技術分析圖表 (保持價格 K 線顏色為紅漲綠跌)，並新增費波那契線"""
     if df.empty: return go.Figure()
         
     fig = make_subplots(
@@ -593,7 +616,6 @@ def create_comprehensive_chart(df, symbol, period):
         row_width=[0.3, 0.1, 0.1, 0.1, 0.1]
     )
     
-    # ... (圖表繪製邏輯保持不變) ...
     # 1. 主價格圖 (使用亞洲習慣：紅漲綠跌)
     fig.add_trace(go.Candlestick(
         x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], 
@@ -606,6 +628,26 @@ def create_comprehensive_chart(df, symbol, period):
     if 'EMA_5' in df.columns: fig.add_trace(go.Scatter(x=df.index, y=df['EMA_5'], name='EMA 5', line=dict(color='#FFD700', width=1)), row=1, col=1)
     if 'EMA_200' in df.columns: fig.add_trace(go.Scatter(x=df.index, y=df['EMA_200'], name='EMA 200', line=dict(color='#808080', width=2)), row=1, col=1)
 
+    # === 新增：費波那契回撤線 (Fibonacci Retracement) ===
+    fib_colors = {
+        '23.6%': '#FF9900', # 橙 (淺)
+        '38.2%': '#009900', # 綠 (深)
+        '50.0%': '#0000FF', # 藍
+        '61.8%': '#990099', # 紫 (重要)
+        '78.6%': '#FF00FF', # 洋紅
+    }
+    
+    for level, price in fib_levels.items():
+        if level in fib_colors:
+            fig.add_hline(
+                y=price, 
+                line_dash="dot", 
+                line_color=fib_colors.get(level, '#888888'),
+                annotation_text=f"Fib {level}: {price:.2f}",
+                annotation_position="bottom right",
+                row=1, col=1
+            )
+            
     # 2. MACD (使用紅漲綠跌邏輯)
     if 'MACD_Hist' in df.columns:
         macd_hist_colors = ['red' if val >= 0 else 'green' for val in df['MACD_Hist'].fillna(0)]
@@ -637,7 +679,7 @@ def create_comprehensive_chart(df, symbol, period):
     fig.update_layout(
         height=950, 
         showlegend=True, 
-        title_text=f"📈 {symbol} - 完整技術分析圖", 
+        title_text=f"📈 {symbol} - 完整技術分析圖 (含費波那契)", # 標題新增費波那契提示
         xaxis_rangeslider_visible=False,
         template="plotly_white",
         margin=dict(l=20, r=20, t=50, b=20)
@@ -798,6 +840,10 @@ def main():
                     
                     df = calculate_technical_indicators(df) 
                     fa_result = calculate_fundamental_rating(final_symbol_to_analyze)
+                    
+                    # === 新增費波那契計算 ===
+                    fib_levels = calculate_fibonacci_levels(df) 
+
                     analysis = generate_expert_fusion_signal(
                         df, 
                         fa_rating=fa_result['Combined_Rating'], 
@@ -812,7 +858,8 @@ def main():
                         'fa_result': fa_result,
                         'analysis': analysis,
                         'selected_period_key': selected_period_key,
-                        'final_symbol_to_analyze': final_symbol_to_analyze
+                        'final_symbol_to_analyze': final_symbol_to_analyze,
+                        'fib_levels': fib_levels # 新增
                     }
                     
                     # 🚩 關鍵修正：所有數據準備好後，將狀態設為 True
@@ -973,8 +1020,31 @@ def main():
         
         st.markdown("---")
         
+        st.subheader("📏 費波那契回撤線 (Fibonacci Levels)")
+        
+        fib_levels = results['fib_levels']
+        if fib_levels:
+            fib_data = []
+            for level, price in fib_levels.items():
+                if level not in ['0.0%', '100.0%']: # 只顯示回撤位
+                    fib_data.append([level, f"{currency_symbol}{price:,.2f}"])
+            
+            fib_df = pd.DataFrame(fib_data, columns=['費波那契比率', '關鍵支撐/壓力價格'])
+            fib_df.set_index('費波那契比率', inplace=True)
+            
+            st.dataframe(
+                fib_df.style.set_properties(**{'font-weight': 'bold', 'color': '#0000FF'}), 
+                use_container_width=True,
+                key=f"fib_df_{final_symbol_to_analyze}_{selected_period_key}"
+            )
+            st.caption(f"ℹ️ **設計師提示:** 費波那契回撤線是根據當前圖表顯示的最高價 ({currency_symbol}{fib_levels.get('100.0%', 0):.2f}) 和最低價 ({currency_symbol}{fib_levels.get('0.0%', 0):.2f}) 自動計算。這些價格點通常被視為潛在的支撐或壓力區間。")
+        else:
+            st.info("無足夠數據計算費波那契回撤線。")
+        
+        st.markdown("---")
+
         st.subheader(f"📊 完整技術分析圖表")
-        chart = create_comprehensive_chart(df, final_symbol_to_analyze, selected_period_key) 
+        chart = create_comprehensive_chart(df, final_symbol_to_analyze, selected_period_key, results['fib_levels']) 
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
     
