@@ -32,7 +32,7 @@ PERIOD_MAP = {
 }
 
 # 🚀 您的【所有資產清單】(ALL_ASSETS_MAP) - 涵蓋美股、台股、加密貨幣、指數、ETF
-# 此清單已大幅擴展，以滿足使用者對「所有股票和加密貨幣」的需求。\
+# 此清單已大幅擴展，以滿足使用者對「所有股票和加密貨幣」的需求。
 ALL_ASSETS_MAP = {
     # ----------------------------------------------------
     # A. 美股核心 (US Stocks) - 個股
@@ -204,14 +204,26 @@ def update_search_input():
 
 @st.cache_data(ttl=600) 
 def get_stock_data(symbol, period, interval):
-    """從 YFinance 獲取歷史數據。"""
+    """從 YFinance 獲取歷史數據，並增強魯棒性。"""
     try:
         ticker = yf.Ticker(symbol)
         df = ticker.history(period=period, interval=interval)
-        if df.empty or len(df) < 50: return pd.DataFrame()
+
+        # 🚩 修正 1. 檢查核心欄位完整性
+        if df.empty or 'Close' not in df.columns or len(df) < 50:
+            return pd.DataFrame()
+
+        # 🚩 修正 2. 數據清洗：前向填充 (ffill) 處理數據缺口
+        # 適用於低流動性資產或盤中數據的偶發缺口
+        df.ffill(inplace=True) 
+        df.dropna(subset=['Close', 'Open', 'High', 'Low'], inplace=True) # 確保價格非 NaN
+
         return df.tail(500).copy()
+    
     except Exception:
+        # 捕捉 ticker 獲取失敗或 API 連線失敗等問題
         return pd.DataFrame()
+
 
 @st.cache_data(ttl=3600) 
 def get_company_info(symbol):
@@ -240,7 +252,7 @@ def get_company_info(symbol):
 def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
     """
     計算公司的基本面評級 (FCF + ROE + P/E)。
-    【修正點：增強 ROE 數據的容錯性】
+    【修正點：增強 FCF CAGR 和 ROE 數據的容錯性】
     """
     results = {
         "FCF_Rating": 0.0, "ROE_Rating": 0.0, "PE_Rating": 0.0, 
@@ -273,7 +285,8 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
         
         # FCF 成長評級 (權重 0.4)
         cf = stock.cashflow
-        fcf_cagr = -99 
+        fcf_cagr = 0.0 
+        
         if not cf.empty and len(cf.columns) >= 2:
             operating_cf = cf.loc['Operating Cash Flow'].dropna()
             # 確保 Capital Expenditure 存在且為數值
@@ -287,9 +300,28 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
             fcf = (operating_cf + capex).dropna() # FCF = Operating CF - CapEx
             
             num_periods = min(years, len(fcf)) - 1
-            if len(fcf) >= 2 and fcf.iloc[-1] > 0 and fcf.iloc[0] > 0 and num_periods > 0:
-                # 採用最近的數據作為 "現在"，最遠的數據作為 "過去"
-                fcf_cagr = ((fcf.iloc[0] / fcf.iloc[-1]) ** (1 / num_periods) - 1) * 100
+            
+            if len(fcf) >= 2 and num_periods > 0:
+                fcf_end = fcf.iloc[0] # 最新的 FCF (最近的季度/年份)
+                fcf_start = fcf.iloc[-1] # 最遠的 FCF (過去的季度/年份)
+
+                # 🚩 FCF CAGR 修正：針對 Quant 和 Financial Analyst 的魯棒性邏輯
+                if fcf_start > 0 and fcf_end > 0:
+                    # 情況 1: 雙方均為正 (正常 CAGR 計算)
+                    fcf_cagr = ((fcf_end / fcf_start) ** (1 / num_periods) - 1) * 100
+                elif fcf_start < 0 and fcf_end > 0:
+                    # 情況 2: 從負轉正，視為強烈利好 (給予最高分)
+                    fcf_cagr = 25.0 
+                elif fcf_start < 0 and fcf_end < 0:
+                    # 情況 3: 持續為負，視為利空 (給予極低分)
+                    fcf_cagr = -10.0
+                elif fcf_start > 0 and fcf_end < 0:
+                    # 情況 4: 從正轉負，視為嚴重利空 (給予極低分)
+                    fcf_cagr = -50.0 
+                else: 
+                    # 包含 FCF 接近 0 或數據異常，保持 0.0
+                    fcf_cagr = 0.0
+
         
         if fcf_cagr >= 15: results["FCF_Rating"] = 1.0
         elif fcf_cagr >= 5: results["FCF_Rating"] = 0.7
@@ -306,12 +338,13 @@ def calculate_fundamental_rating(symbol: str, years: int = 5) -> dict:
             # 1. 計算 ROE
             roe_series = (net_income / equity).replace([np.inf, -np.inf], np.nan)
             
-            # 2. 🚩 修正：數據過濾 - 篩選掉極端異常或 0 的數據
-            # 排除 ROE 接近 0 或極端值 (例如 |ROE| > 100%)
-            valid_roe = roe_series[(roe_series.abs() > 0.0001) & (roe_series.abs() < 10)] 
+            # 2. 🚩 ROE 修正：收緊極端值過濾門檻 (Financial Analyst 標準)
+            # 將極端值門檻收緊至 5.0 (500%)，排除異常數據污染
+            valid_roe = roe_series[(roe_series.abs() > 0.0001) & (roe_series.abs() < 5)] 
             
             # 3. 計算近四季的平均 ROE
             if len(valid_roe) >= 4:
+                # 採用最新的 4 個有效季度 ROE
                 roe_avg = valid_roe[:4].mean() * 100 
             elif len(valid_roe) > 0:
                 # 如果少於 4 季，則用所有有效 ROE 的平均值
@@ -352,6 +385,9 @@ def calculate_technical_indicators(df):
     (MACD, RSI, KD, ADX, ATR, 多 EMA)
     """
     if df.empty: return df
+    
+    # 🚩 修正：數據前處理，確保序列連續性 (Algorithmic Trading 標準實踐)
+    df.ffill(inplace=True) 
     
     # 趨勢
     df['EMA_5'] = ta.trend.ema_indicator(df['Close'], window=5, fillna=False)
@@ -694,8 +730,7 @@ def get_currency_symbol(symbol: str) -> str:
 def main():
     
     # 🚩 關鍵修正：將主標題替換為自定義 HTML 樣式的 st.markdown 以達到「放大」效果，並使用淡橙色 (#FFA07A)
-    # 此處已更新為您請求的標題：🤖 AI 趨勢分析📈
-    st.markdown("<h1 style='text-align: center; color: #FFA07A; font-size: 3.5em; padding-bottom: 0.5em;'>🤖 AI 趨勢分析📈</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #FFA07A; font-size: 3.5em; padding-bottom: 0.5em;'>🤖 AI趨勢分析📈</h1>", unsafe_allow_html=True)
     st.markdown("---") 
 
     # 🚩 關鍵修正：會話狀態初始化，用於控制渲染
@@ -783,7 +818,7 @@ def main():
     period_keys = list(PERIOD_MAP.keys())
     selected_period_key = st.sidebar.selectbox("分析時間週期", period_keys, index=period_keys.index("1 日 (中長線)")) 
     
-    selected_period_value = PERIOD_MAP[selected_period_key]
+    selected_period_value = PERIOD_MAP[period_keys.index(selected_period_key)]
     yf_period, yf_interval = selected_period_value
     
     is_long_term = selected_period_key in ["1 日 (中長線)", "1 週 (長期)"]
@@ -865,8 +900,7 @@ def main():
         
         # --- 結果呈現 ---
         
-        # 🎯 已移除 「專家融合分析」
-        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze})") 
+        st.header(f"📈 **{company_info['name']}** ({final_symbol_to_analyze}) 專家融合分析")
         
         # 計算漲跌幅
         current_price = analysis['current_price']
