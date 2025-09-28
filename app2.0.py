@@ -29,9 +29,7 @@ PERIOD_MAP = {
     "1 週 (長期)": ("max", "1wk")
 }
 
-# 🚀 您的【所有資產清單】(ALL_ASSETS_MAP) - 涵蓋美股、台股、加密貨幣、指數、ETF
 ALL_ASSETS_MAP = {
-    # 台灣股票範例
     "2330.TW": {"name": "台積電", "category": "台灣股票", "currency": "TWD"},
     "2303.TW": {"name": "聯電", "category": "台灣股票", "currency": "TWD"},
     "2454.TW": {"name": "聯發科", "category": "台灣股票", "currency": "TWD"},
@@ -42,7 +40,6 @@ ALL_ASSETS_MAP = {
     "0056.TW": {"name": "元大高股息", "category": "台灣ETF", "currency": "TWD"},
     "TSE": {"name": "台灣加權指數", "category": "指數", "currency": "TWD"},
 
-    # 美國股票範例
     "AAPL": {"name": "蘋果", "category": "美國股票", "currency": "USD"},
     "MSFT": {"name": "微軟", "category": "美國股票", "currency": "USD"},
     "GOOGL": {"name": "Alphabet (Google)", "category": "美國股票", "currency": "USD"},
@@ -52,25 +49,21 @@ ALL_ASSETS_MAP = {
     "TSLA": {"name": "特斯拉", "category": "美國股票", "currency": "USD"},
     "JPM": {"name": "摩根大通", "category": "美國股票", "currency": "USD"},
     
-    # 加密貨幣範例
     "BTC-USD": {"name": "比特幣/USD", "category": "加密貨幣", "currency": "USD"},
     "ETH-USD": {"name": "以太幣/USD", "category": "加密貨幣", "currency": "USD"},
     "ADA-USD": {"name": "Cardano/USD", "category": "加密貨幣", "currency": "USD"},
     
-    # 指數範例
     "^GSPC": {"name": "S&P 500", "category": "指數", "currency": "USD"},
     "^DJI": {"name": "道瓊指數", "category": "指數", "currency": "USD"},
     "^IXIC": {"name": "納斯達克指數", "category": "USD"},
     "^HSI": {"name": "香港恒生指數", "category": "指數", "currency": "HKD"},
 
-    # 美國 ETF
     "SPY": {"name": "標普500 ETF", "category": "美國ETF", "currency": "USD"},
     "QQQ": {"name": "那斯達克100 ETF", "category": "美國ETF", "currency": "USD"},
 }
 
 # ==============================================================================
 # 2. 輔助函式定義
-# 這裡包含所有 Streamlit 邏輯需要依賴的函數
 # ==============================================================================
 
 def get_symbol_from_query(query):
@@ -78,25 +71,20 @@ def get_symbol_from_query(query):
     if not query:
         return st.session_state.get('last_search_symbol', "2330.TW")
 
-    # 1. 精確代碼匹配 (大小寫不敏感)
     if query.upper() in ALL_ASSETS_MAP:
         return query.upper()
 
-    # 2. 精確中文名稱匹配
     for symbol, data in ALL_ASSETS_MAP.items():
         if data['name'] == query:
             return symbol
 
-    # 3. 模糊中文名稱匹配 (只要包含即可)
     for symbol, data in ALL_ASSETS_MAP.items():
         if query in data['name']:
             return symbol
 
-    # 4. 針對數字代碼，嘗試添加.TW
     if re.match(r'^\d{4,5}$', query) and f"{query}.TW" in ALL_ASSETS_MAP:
         return f"{query}.TW"
 
-    # 5. yfinance直接測試
     try:
         if yf.Ticker(query).info.get('regularMarketPrice'):
             return query.upper()
@@ -118,9 +106,8 @@ def get_stock_data(symbol, period, interval):
         df.index.name = 'Date'
         
         df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
-        return df.iloc[:-1] # 移除最後一行可能不完整的數據
+        return df.iloc[:-1]
     except Exception as e:
-        st.error(f"數據下載失敗: {e}")
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
@@ -171,16 +158,13 @@ def get_technical_data_df(df):
     
     indicators = {}
     
-    # 趨勢指標
     indicators['收盤價 vs SMA-20'] = last_row['Close']
     indicators['收盤價 vs EMA-50'] = last_row['Close']
     
-    # 動能指標
     indicators['RSI (14)'] = last_row['RSI']
     indicators['Stochastics (%K)'] = last_row['Stoch_K']
     indicators['MACD 柱狀圖 (Signal)'] = last_row['MACD']
     
-    # 波動性指標
     indicators['ATR (14)'] = last_row['ATR']
     indicators['布林通道 (BB)'] = last_row['Close']
     
@@ -285,7 +269,6 @@ def calculate_fundamental_rating(symbol):
         ticker = yf.Ticker(symbol)
         info = ticker.info
         
-        # 獲取關鍵基本面指標
         roe = info.get('returnOnEquity', 0)
         payoutRatio = info.get('payoutRatio', 0) 
         freeCashFlow = info.get('freeCashflow', 0)
@@ -294,31 +277,25 @@ def calculate_fundamental_rating(symbol):
         marketCap = info.get('marketCap', 1) 
         pe = info.get('trailingPE', 99)
         
-        # 財務健康度 (Cash vs Debt)
         cash_debt_ratio = (totalCash / totalDebt) if totalDebt else 100
         
-        # 成長與效率評分 (ROE)
         roe_score = 0
         if roe > 0.15: roe_score = 3 
         elif roe > 0.08: roe_score = 2
         elif roe > 0: roe_score = 1
         
-        # 估值評分 (PE)
         pe_score = 0
         if pe < 15: pe_score = 3
         elif pe < 25: pe_score = 2
         elif pe < 35: pe_score = 1
         
-        # 現金流與償債能力
         cf_score = 0
         if freeCashFlow > 0.05 * marketCap and cash_debt_ratio > 1.5: cf_score = 3
         elif freeCashFlow > 0 and cash_debt_ratio > 1: cf_score = 2
         elif freeCashFlow > 0: cf_score = 1
 
-        # 綜合評級 (總分 9)
         combined_rating = roe_score + pe_score + cf_score
         
-        # 評級解讀
         if combined_rating >= 7:
             message = "頂級優異：基本面健康，成長與估值均強勁，適合長期持有。"
         elif combined_rating >= 5:
@@ -344,13 +321,12 @@ def calculate_fundamental_rating(symbol):
 def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
     
     if df.empty:
-        return {'action': '數據不足', 'score': 0, 'confidence': 0, 'strategy': '無法評估', 'entry_price': 0, 'take_profit': 0, 'stop_loss': 0, 'current_price': 0}
+        return {'action': '數據不足', 'score': 0, 'confidence': 0, 'strategy': '無法評估', 'entry_price': 0, 'take_profit': 0, 'stop_loss': 0, 'current_price': 0, 'expert_opinions': {}}
 
     last_row = df.iloc[-1]
     current_price = last_row['Close']
     atr_value = last_row['ATR']
     
-    # 專家意見初始化
     expert_opinions = {}
     
     # 1. 趨勢專家 (均線)
@@ -413,10 +389,8 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
         kline_score = 0
         expert_opinions['K線形態分析'] = "中性：K線實體小，觀望。"
 
-    # 融合評分 (總分 12 分 + FA 評分)
     fusion_score = trend_score + momentum_score + volatility_score + kline_score + (fa_rating / 9) * 3
     
-    # 最終行動
     action = "觀望 (Neutral)"
     
     if fusion_score >= 4.5:
@@ -428,14 +402,11 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
     elif fusion_score <= -1.5:
         action = "中性偏賣 (Hold/Sell)"
         
-    # 信心指數 (將評分正規化到 0-100)
     confidence = min(100, max(0, 50 + fusion_score * 5))
     
-    # 風險控制與交易策略
     risk_multiple = 2.0 if is_long_term else 1.5
     reward_multiple = 2.0
     
-    # 定義策略
     if action in ["買進 (Buy)", "中性偏買 (Hold/Buy)"]:
         entry = current_price * 0.99 
         stop_loss = entry - (atr_value * risk_multiple)
@@ -466,7 +437,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
     }
 
 def create_comprehensive_chart(df, symbol, period_key):
-    # 1. 主圖：K線與均線
+    
     fig = make_subplots(rows=3, cols=1, 
                         shared_xaxes=True, 
                         vertical_spacing=0.08,
@@ -487,18 +458,15 @@ def create_comprehensive_chart(df, symbol, period_key):
     fig.add_trace(go.Scatter(x=df.index, y=df['BB_High'], line=dict(color='grey', width=1, dash='dot'), name='BB 上軌'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df.index, y=df['BB_Low'], line=dict(color='grey', width=1, dash='dot'), name='BB 下軌'), row=1, col=1)
     
-    # 2. MACD 圖
     colors = np.where(df['MACD'] > 0, '#cc0000', '#1e8449') 
     fig.add_trace(go.Bar(x=df.index, y=df['MACD'], name='MACD 柱狀圖', marker_color=colors), row=2, col=1)
     fig.update_yaxes(title_text="MACD", row=2, col=1)
 
-    # 3. RSI 圖
     fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], line=dict(color='purple', width=1.5), name='RSI'), row=3, col=1)
     fig.add_hline(y=70, line_dash="dash", line_color="red", row=3, col=1)
     fig.add_hline(y=30, line_dash="dash", line_color="green", row=3, col=1)
     fig.update_yaxes(title_text="RSI", range=[0, 100], row=3, col=1)
 
-    # 佈局設定
     fig.update_layout(
         xaxis_rangeslider_visible=False,
         hovermode="x unified",
@@ -511,7 +479,6 @@ def create_comprehensive_chart(df, symbol, period_key):
 
 # Streamlit 側邊欄函數
 def update_search_input():
-    # 當 selectbox 改變時，更新 text_input 的值，並觸發分析
     selected_display = st.session_state.symbol_select_box
     symbol = selected_display.split(' ')[0] 
     st.session_state['sidebar_search_input'] = symbol
@@ -521,18 +488,21 @@ def update_search_input():
 # 3. Streamlit 主邏輯 (Main Function)
 # ==============================================================================
 
-# 靜態側邊欄選擇器 (Category Selectbox)
-category_options = list(set(data['category'] for data in ALL_ASSETS_MAP.values()))
-category_options.sort(key=lambda x: ("台灣" not in x, x)) # 台灣相關排前
-selected_category = st.sidebar.selectbox("1. 選擇資產類別", category_options)
-
-current_category_options_display = []
-for symbol, data in ALL_ASSETS_MAP.items():
-    if data['category'] == selected_category:
-        current_category_options_display.append(f"{symbol} ({data['name']})")
-
-
 def main():
+    # --- 0. 靜態側邊欄選擇器 (Category Selectbox) 移入 main() ---
+    category_options = list(set(data['category'] for data in ALL_ASSETS_MAP.values()))
+    category_options.sort(key=lambda x: ("台灣" not in x, x)) 
+    
+    selected_category = st.sidebar.selectbox("1. 選擇資產類別", category_options)
+
+    current_category_options_display = []
+    for symbol, data in ALL_ASSETS_MAP.items():
+        if data['category'] == selected_category:
+            current_category_options_display.append(f"{symbol} ({data['name']})")
+    
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("2. **選擇標的**")
+    
     # --- 1. 找出當前 symbol 是否在列表中的預設值 ---
     current_symbol_code = st.session_state.get('last_search_symbol', "2330.TW")
     default_symbol_index = 0
@@ -797,6 +767,7 @@ def main():
 
 
 if __name__ == '__main__':
+    # Streamlit Session State 初始化，確保變數存在
     if 'last_search_symbol' not in st.session_state:
         st.session_state['last_search_symbol'] = "2330.TW"
     if 'data_ready' not in st.session_state:
