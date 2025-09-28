@@ -29,68 +29,133 @@ PERIOD_MAP = {
     "1 週 (長期)": ("max", "1wk")
 }
 
-ALL_ASSETS_MAP = {
-    "2330.TW": {"name": "台積電", "category": "台灣股票", "currency": "TWD"},
-    "2303.TW": {"name": "聯電", "category": "台灣股票", "currency": "TWD"},
-    "2454.TW": {"name": "聯發科", "category": "台灣股票", "currency": "TWD"},
-    "2317.TW": {"name": "鴻海", "category": "台灣股票", "currency": "TWD"},
-    "2382.TW": {"name": "廣達", "category": "台灣股票", "currency": "TWD"},
-    "2881.TW": {"name": "富邦金", "category": "台灣股票", "currency": "TWD"},
-    "0050.TW": {"name": "元大台灣50", "category": "台灣ETF", "currency": "TWD"},
-    "0056.TW": {"name": "元大高股息", "category": "台灣ETF", "currency": "TWD"},
-    "TSE": {"name": "台灣加權指數", "category": "指數", "currency": "TWD"},
-
-    "AAPL": {"name": "蘋果", "category": "美國股票", "currency": "USD"},
-    "MSFT": {"name": "微軟", "category": "美國股票", "currency": "USD"},
-    "GOOGL": {"name": "Alphabet (Google)", "category": "美國股票", "currency": "USD"},
-    "AMZN": {"name": "亞馬遜", "category": "美國股票", "currency": "USD"},
-    "NVDA": {"name": "輝達", "category": "美國股票", "currency": "USD"},
-    "META": {"name": "Meta Platforms", "category": "美國股票", "currency": "USD"},
-    "TSLA": {"name": "特斯拉", "category": "美國股票", "currency": "USD"},
-    "JPM": {"name": "摩根大通", "category": "美國股票", "currency": "USD"},
-    
-    "BTC-USD": {"name": "比特幣/USD", "category": "加密貨幣", "currency": "USD"},
-    "ETH-USD": {"name": "以太幣/USD", "category": "加密貨幣", "currency": "USD"},
-    "ADA-USD": {"name": "Cardano/USD", "category": "加密貨幣", "currency": "USD"},
-    
-    "^GSPC": {"name": "S&P 500", "category": "指數", "currency": "USD"},
-    "^DJI": {"name": "道瓊指數", "category": "指數", "currency": "USD"},
-    "^IXIC": {"name": "納斯達克指數", "category": "USD"},
-    "^HSI": {"name": "香港恒生指數", "category": "指數", "currency": "HKD"},
-
-    "SPY": {"name": "標普500 ETF", "category": "美國ETF", "currency": "USD"},
-    "QQQ": {"name": "那斯達克100 ETF", "category": "美國ETF", "currency": "USD"},
+# 🚀 您的【所有資產清單】(FULL_SYMBOLS_MAP)
+FULL_SYMBOLS_MAP = {
+    # ----------------------------------------------------
+    # A. 美股核心 (US Stocks) - 個股
+    # ----------------------------------------------------
+    "TSLA": {"name": "特斯拉", "keywords": ["特斯拉", "電動車", "TSLA", "Tesla"]},
+    "NVDA": {"name": "輝達", "keywords": ["輝達", "英偉達", "AI", "NVDA", "Nvidia"]},
+    "AAPL": {"name": "蘋果", "keywords": ["蘋果", "Apple", "AAPL"]},
+    "GOOGL": {"name": "谷歌/Alphabet", "keywords": ["谷歌", "Alphabet", "GOOGL", "GOOG"]},
+    "MSFT": {"name": "微軟", "keywords": ["微軟", "Microsoft", "MSFT"]},
+    "AMZN": {"name": "亞馬遜", "keywords": ["亞馬遜", "Amazon", "AMZN"]},
+    "META": {"name": "Meta/臉書", "keywords": ["臉書", "Meta", "FB", "META"]},
+    "NFLX": {"name": "網飛", "keywords": ["網飛", "Netflix", "NFLX"]},
+    "ADBE": {"name": "Adobe", "keywords": ["Adobe", "ADBE"]},
+    "CRM": {"name": "Salesforce", "keywords": ["Salesforce", "CRM"]},
+    "ORCL": {"name": "甲骨文", "keywords": ["甲骨文", "Oracle", "ORCL"]},
+    "COST": {"name": "好市多", "keywords": ["好市多", "Costco", "COST"]},
+    "JPM": {"name": "摩根大通", "keywords": ["摩根大通", "JPMorgan", "JPM"]},
+    "V": {"name": "Visa", "keywords": ["Visa", "V"]},
+    "WMT": {"name": "沃爾瑪", "keywords": ["沃爾瑪", "Walmart", "WMT"]},
+    "PG": {"name": "寶潔", "keywords": ["寶潔", "P&G", "PG"]},
+    "KO": {"name": "可口可樂", "keywords": ["可口可樂", "CocaCola", "KO"]},
+    "PEP": {"name": "百事", "keywords": ["百事", "Pepsi", "PEP"]},
+    "MCD": {"name": "麥當勞", "keywords": ["麥當勞", "McDonalds", "MCD"]},
+    "QCOM": {"name": "高通", "keywords": ["高通", "Qualcomm", "QCOM"]},
+    "INTC": {"name": "英特爾", "keywords": ["英特爾", "Intel", "INTC"]},
+    "AMD": {"name": "超微", "keywords": ["超微", "AMD"]},
+    "LLY": {"name": "禮來", "keywords": ["禮來", "EliLilly", "LLY"]},
+    "UNH": {"name": "聯合健康", "keywords": ["聯合健康", "UNH"]},
+    "HD": {"name": "家得寶", "keywords": ["家得寶", "HomeDepot", "HD"]},
+    "CAT": {"name": "開拓重工", "keywords": ["開拓重工", "Caterpillar", "CAT"]},
+    # B. 美股指數/ETF (US Indices/ETFs)
+    "^GSPC": {"name": "S&P 500 指數", "keywords": ["標普", "S&P500", "^GSPC", "SPX"]},
+    "^IXIC": {"name": "NASDAQ 綜合指數", "keywords": ["納斯達克", "NASDAQ", "^IXIC"]},
+    "^DJI": {"name": "道瓊工業指數", "keywords": ["道瓊", "DowJones", "^DJI"]},
+    "SPY": {"name": "SPDR 標普500 ETF", "keywords": ["SPY", "標普ETF"]},
+    "QQQ": {"name": "Invesco QQQ Trust", "keywords": ["QQQ", "納斯達克ETF"]},
+    "VOO": {"name": "Vanguard 標普500 ETF", "keywords": ["VOO", "Vanguard"]},
+    # ----------------------------------------------------
+    # C. 台灣市場 (TW Stocks/ETFs/Indices)
+    # ----------------------------------------------------
+    "2330.TW": {"name": "台積電", "keywords": ["台積電", "2330", "TSMC"]},
+    "2317.TW": {"name": "鴻海", "keywords": ["鴻海", "2317", "Foxconn"]},
+    "2454.TW": {"name": "聯發科", "keywords": ["聯發科", "2454", "MediaTek"]},
+    "2308.TW": {"name": "台達電", "keywords": ["台達電", "2308", "Delta"]},
+    "3017.TW": {"name": "奇鋐", "keywords": ["奇鋐", "3017", "散熱"]},
+    "3231.TW": {"name": "緯創", "keywords": ["緯創", "3231"]},
+    "2382.TW": {"name": "廣達", "keywords": ["廣達", "2382"]},
+    "2379.TW": {"name": "瑞昱", "keywords": ["瑞昱", "2379"]},
+    "2881.TW": {"name": "富邦金", "keywords": ["富邦金", "2881"]},
+    "2882.TW": {"name": "國泰金", "keywords": ["國泰金", "2882"]},
+    "2603.TW": {"name": "長榮", "keywords": ["長榮", "2603", "航運"]},
+    "2609.TW": {"name": "陽明", "keywords": ["陽明", "2609", "航運"]},
+    "2615.TW": {"name": "萬海", "keywords": ["萬海", "2615", "航運"]},
+    "2891.TW": {"name": "中信金", "keywords": ["中信金", "2891"]},
+    "1101.TW": {"name": "台泥", "keywords": ["台泥", "1101"]},
+    "1301.TW": {"name": "台塑", "keywords": ["台塑", "1301"]},
+    "2357.TW": {"name": "華碩", "keywords": ["華碩", "2357"]},
+    "0050.TW": {"name": "元大台灣50", "keywords": ["台灣50", "0050", "台灣五十"]},
+    "0056.TW": {"name": "元大高股息", "keywords": ["高股息", "0056"]},
+    "00878.TW": {"name": "國泰永續高股息", "keywords": ["00878", "國泰永續"]},
+    "^TWII": {"name": "台股指數", "keywords": ["台股指數", "加權指數", "^TWII"]},
+    # ----------------------------------------------------
+    # D. 加密貨幣 (Crypto)
+    # ----------------------------------------------------
+    "BTC-USD": {"name": "比特幣", "keywords": ["比特幣", "BTC", "bitcoin", "BTC-USDT"]},
+    "ETH-USD": {"name": "以太坊", "keywords": ["以太坊", "ETH", "ethereum", "ETH-USDT"]},
+    "SOL-USD": {"name": "Solana", "keywords": ["Solana", "SOL", "SOL-USDT"]},
+    "BNB-USD": {"name": "幣安幣", "keywords": ["幣安幣", "BNB", "BNB-USDT"]},
+    "DOGE-USD": {"name": "狗狗幣", "keywords": ["狗狗幣", "DOGE", "DOGE-USDT"]},
+    "XRP-USD": {"name": "瑞波幣", "keywords": ["瑞波幣", "XRP", "XRP-USDT"]},
+    "ADA-USD": {"name": "Cardano", "keywords": ["Cardano", "ADA", "ADA-USDT"]},
+    "AVAX-USD": {"name": "Avalanche", "keywords": ["Avalanche", "AVAX", "AVAX-USDT"]},
+    "DOT-USD": {"name": "Polkadot", "keywords": ["Polkadot", "DOT", "DOT-USDT"]},
+    "LINK-USD": {"name": "Chainlink", "keywords": ["Chainlink", "LINK", "LINK-USDT"]},
 }
 
+# 🎯 新增兩層選擇的類別與熱門選項映射 (基於 FULL_SYMBOLS_MAP)
+CATEGORY_MAP = {
+    "美股 (US) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if not (c.endswith(".TW") or c.endswith("-USD") or c.startswith("^TWII"))],
+    "台股 (TW) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if c.endswith(".TW") or c.startswith("^TWII")],
+    "加密貨幣 (Crypto)": [c for c in FULL_SYMBOLS_MAP.keys() if c.endswith("-USD")],
+}
+
+# 建立第二層 Selectbox 的選項 {顯示名稱: 代碼}
+CATEGORY_HOT_OPTIONS = {}
+for category, codes in CATEGORY_MAP.items():
+    options = {}
+    sorted_codes = sorted(codes) 
+    for code in sorted_codes:
+        info = FULL_SYMBOLS_MAP.get(code)
+        if info:
+            options[f"{code} - {info['name']}"] = code
+    CATEGORY_HOT_OPTIONS[category] = options
+    
 # ==============================================================================
 # 2. 輔助函式定義
 # ==============================================================================
 
-def get_symbol_from_query(query):
+def get_symbol_from_query(query: str) -> str:
+    """
+    🎯 進化後的代碼解析函數：
+    同時檢查 FULL_SYMBOLS_MAP
+    """
     query = query.strip()
-    if not query:
-        return st.session_state.get('last_search_symbol', "2330.TW")
-
-    if query.upper() in ALL_ASSETS_MAP:
-        return query.upper()
-
-    for symbol, data in ALL_ASSETS_MAP.items():
-        if data['name'] == query:
-            return symbol
-
-    for symbol, data in ALL_ASSETS_MAP.items():
-        if query in data['name']:
-            return symbol
-
-    if re.match(r'^\d{4,5}$', query) and f"{query}.TW" in ALL_ASSETS_MAP:
-        return f"{query}.TW"
-
-    try:
-        if yf.Ticker(query).info.get('regularMarketPrice'):
-            return query.upper()
-    except:
-        pass
-        
+    # 1. 優先精確代碼/英文關鍵字匹配 (轉大寫)
+    query_upper = query.upper()
+    for code, data in FULL_SYMBOLS_MAP.items():
+        # 檢查 YFinance 代碼 (2330.TW, BNB-USD)
+        if query_upper == code: # code 本身就是 yfinance_code
+            return code
+        # 檢查英文關鍵詞 (TSMC, BNB, BTC-USDT)
+        if any(query_upper == kw.upper() for kw in data["keywords"]):
+            return code # 返回 FULL_SYMBOLS_MAP 中的標準代碼
+    # 2. 中文名稱精確匹配 (不轉大寫)
+    for code, data in FULL_SYMBOLS_MAP.items():
+        if query == data["name"]:
+            return code
+    # 3. 台灣股票代碼自動補齊 (例如: 2317 -> 2317.TW)
+    if re.fullmatch(r'\d{4,6}', query) and not any(ext in query_upper for ext in ['.TW', '.HK', '.SS', '-USD']):
+        # 如果純數字代碼在 FULL_SYMBOLS_MAP 中有對應，則補齊
+        tw_code = f"{query}.TW"
+        if tw_code in FULL_SYMBOLS_MAP:
+             return tw_code
+        # 如果不在清單，仍嘗試補齊 (交給 yfinance 驗證)
+        return tw_code
+    # 4. 沒匹配到任何預設代碼，直接返回用戶輸入 (交給 yfinance 處理)
     return query
 
 @st.cache_data(ttl=3600, show_spinner="正在從 Yahoo Finance 獲取數據...")
@@ -112,15 +177,35 @@ def get_stock_data(symbol, period, interval):
 
 @st.cache_data(ttl=3600)
 def get_company_info(symbol):
-    if symbol in ALL_ASSETS_MAP:
-        return ALL_ASSETS_MAP[symbol]
+    info = FULL_SYMBOLS_MAP.get(symbol, {})
+    if info:
+        # 從 FULL_SYMBOLS_MAP 中推導出 category 和 currency
+        if symbol.endswith(".TW") or symbol.startswith("^TWII"):
+            category = "台股 (TW)"
+            currency = "TWD"
+        elif symbol.endswith("-USD"):
+            category = "加密貨幣 (Crypto)"
+            currency = "USD"
+        else:
+            category = "美股 (US)"
+            currency = "USD" # 預設美股為 USD
+            
+        return {"name": info['name'], "category": category, "currency": currency}
     
     try:
         ticker = yf.Ticker(symbol)
-        info = ticker.info
-        name = info.get('longName') or info.get('shortName') or symbol
-        currency = info.get('currency') or "USD"
-        return {"name": name, "category": "未分類", "currency": currency}
+        yf_info = ticker.info
+        name = yf_info.get('longName') or yf_info.get('shortName') or symbol
+        currency = yf_info.get('currency') or "USD"
+        category = "未分類"
+        
+        # 嘗試從代碼判斷類別
+        if symbol.endswith(".TW"): category = "台股 (TW)"
+        elif symbol.endswith("-USD"): category = "加密貨幣 (Crypto)"
+        elif symbol.startswith("^"): category = "指數"
+        elif currency == "USD": category = "美股 (US)"
+
+        return {"name": name, "category": category, "currency": currency}
     except:
         return {"name": symbol, "category": "未分類", "currency": "USD"}
     
@@ -269,6 +354,7 @@ def calculate_fundamental_rating(symbol):
         ticker = yf.Ticker(symbol)
         info = ticker.info
         
+        # 獲取關鍵基本面指標
         roe = info.get('returnOnEquity', 0)
         payoutRatio = info.get('payoutRatio', 0) 
         freeCashFlow = info.get('freeCashflow', 0)
@@ -277,25 +363,31 @@ def calculate_fundamental_rating(symbol):
         marketCap = info.get('marketCap', 1) 
         pe = info.get('trailingPE', 99)
         
+        # 財務健康度 (Cash vs Debt)
         cash_debt_ratio = (totalCash / totalDebt) if totalDebt else 100
         
+        # 成長與效率評分 (ROE)
         roe_score = 0
         if roe > 0.15: roe_score = 3 
         elif roe > 0.08: roe_score = 2
         elif roe > 0: roe_score = 1
         
+        # 估值評分 (PE)
         pe_score = 0
         if pe < 15: pe_score = 3
         elif pe < 25: pe_score = 2
         elif pe < 35: pe_score = 1
         
+        # 現金流與償債能力
         cf_score = 0
         if freeCashFlow > 0.05 * marketCap and cash_debt_ratio > 1.5: cf_score = 3
         elif freeCashFlow > 0 and cash_debt_ratio > 1: cf_score = 2
         elif freeCashFlow > 0: cf_score = 1
 
+        # 綜合評級 (總分 9)
         combined_rating = roe_score + pe_score + cf_score
         
+        # 評級解讀
         if combined_rating >= 7:
             message = "頂級優異：基本面健康，成長與估值均強勁，適合長期持有。"
         elif combined_rating >= 5:
@@ -389,8 +481,10 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
         kline_score = 0
         expert_opinions['K線形態分析'] = "中性：K線實體小，觀望。"
 
+    # 融合評分 (總分 12 分 + FA 評分)
     fusion_score = trend_score + momentum_score + volatility_score + kline_score + (fa_rating / 9) * 3
     
+    # 最終行動
     action = "觀望 (Neutral)"
     
     if fusion_score >= 4.5:
@@ -402,11 +496,14 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
     elif fusion_score <= -1.5:
         action = "中性偏賣 (Hold/Sell)"
         
+    # 信心指數 (將評分正規化到 0-100)
     confidence = min(100, max(0, 50 + fusion_score * 5))
     
+    # 風險控制與交易策略
     risk_multiple = 2.0 if is_long_term else 1.5
     reward_multiple = 2.0
     
+    # 定義策略
     if action in ["買進 (Buy)", "中性偏買 (Hold/Buy)"]:
         entry = current_price * 0.99 
         stop_loss = entry - (atr_value * risk_multiple)
@@ -437,7 +534,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
     }
 
 def create_comprehensive_chart(df, symbol, period_key):
-    
+    # 1. 主圖：K線與均線
     fig = make_subplots(rows=3, cols=1, 
                         shared_xaxes=True, 
                         vertical_spacing=0.08,
@@ -458,15 +555,18 @@ def create_comprehensive_chart(df, symbol, period_key):
     fig.add_trace(go.Scatter(x=df.index, y=df['BB_High'], line=dict(color='grey', width=1, dash='dot'), name='BB 上軌'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df.index, y=df['BB_Low'], line=dict(color='grey', width=1, dash='dot'), name='BB 下軌'), row=1, col=1)
     
+    # 2. MACD 圖
     colors = np.where(df['MACD'] > 0, '#cc0000', '#1e8449') 
     fig.add_trace(go.Bar(x=df.index, y=df['MACD'], name='MACD 柱狀圖', marker_color=colors), row=2, col=1)
     fig.update_yaxes(title_text="MACD", row=2, col=1)
 
+    # 3. RSI 圖
     fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], line=dict(color='purple', width=1.5), name='RSI'), row=3, col=1)
     fig.add_hline(y=70, line_dash="dash", line_color="red", row=3, col=1)
     fig.add_hline(y=30, line_dash="dash", line_color="green", row=3, col=1)
     fig.update_yaxes(title_text="RSI", range=[0, 100], row=3, col=1)
 
+    # 佈局設定
     fig.update_layout(
         xaxis_rangeslider_visible=False,
         hovermode="x unified",
@@ -479,41 +579,60 @@ def create_comprehensive_chart(df, symbol, period_key):
 
 # Streamlit 側邊欄函數
 def update_search_input():
-    selected_display = st.session_state.symbol_select_box
-    symbol = selected_display.split(' ')[0] 
-    st.session_state['sidebar_search_input'] = symbol
-    st.session_state['analyze_trigger'] = True
+    """
+    當第二層快速選擇下拉選單改變時，自動更新搜尋欄位的代碼。
+    """
+    # 讀取第二層 Selectbox 的當前值 (顯示文字，e.g., "SOL-USD - Solana")
+    selected_option_display = st.session_state.symbol_select_box
+    # If the placeholder is selected, do nothing.
+    if selected_option_display and selected_option_display != "請選擇標的...":
+        # 解析出代碼 (e.g., "SOL-USD - Solana" -> "SOL-USD")
+        code = selected_option_display.split(' - ')[0]
+        # 1. 設置 Text Input 的值 (使用 Text Input 的 key: sidebar_search_input)
+        st.session_state.sidebar_search_input = code
+        # 2. 強制設置 analyze_trigger 為 True，確保代碼改變後分析被觸發
+        if st.session_state.get('last_search_symbol') != code:
+            st.session_state.last_search_symbol = code
+            st.session_state.analyze_trigger = True
+
 
 # ==============================================================================
 # 3. Streamlit 主邏輯 (Main Function)
 # ==============================================================================
 
 def main():
-    # --- 0. 靜態側邊欄選擇器 (Category Selectbox) 移入 main() ---
-    category_options = list(set(data['category'] for data in ALL_ASSETS_MAP.values()))
-    category_options.sort(key=lambda x: ("台灣" not in x, x)) 
+    # --- 0. 側邊欄選擇器 (Category Selectbox) ---
+    category_keys = list(CATEGORY_MAP.keys())
     
-    selected_category = st.sidebar.selectbox("1. 選擇資產類別", category_options)
+    st.sidebar.markdown("1. 選擇資產類別")
+    selected_category_key = st.sidebar.selectbox(
+        "選擇資產類別", 
+        category_keys, 
+        index=category_keys.index("台股 (TW) - 個股/ETF/指數"), # 預設選中台股
+        label_visibility="collapsed"
+    )
 
-    current_category_options_display = []
-    for symbol, data in ALL_ASSETS_MAP.items():
-        if data['category'] == selected_category:
-            current_category_options_display.append(f"{symbol} ({data['name']})")
-    
     st.sidebar.markdown("---")
-    st.sidebar.markdown("2. **選擇標的**")
+    st.sidebar.markdown("2. 快速選擇標的")
     
-    # --- 1. 找出當前 symbol 是否在列表中的預設值 ---
+    # 根據第一層選擇，準備第二層的選項 (顯示名稱)
+    current_category_options_display = list(CATEGORY_HOT_OPTIONS.get(selected_category_key, {}).keys())
+    
+    # 找出當前 symbol 是否在列表中的預設值
     current_symbol_code = st.session_state.get('last_search_symbol', "2330.TW")
     default_symbol_index = 0
-
-    for i, display_name in enumerate(current_category_options_display):
-        if display_name.startswith(current_symbol_code):
-            default_symbol_index = i
-            break
+    
+    # 嘗試匹配當前代碼到顯示名稱
+    try:
+        current_display_name = f"{current_symbol_code} - {FULL_SYMBOLS_MAP[current_symbol_code]['name']}"
+        if current_display_name in current_category_options_display:
+            default_symbol_index = current_category_options_display.index(current_display_name)
+    except:
+        # 如果當前代碼不在當前類別，預設選第一個
+        pass
 
     st.sidebar.selectbox(
-        f"選擇 {selected_category} 標的",
+        f"選擇 {selected_category_key} 標的",
         current_category_options_display,
         index=default_symbol_index,
         key="symbol_select_box",
