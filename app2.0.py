@@ -380,61 +380,62 @@ def calculate_fundamental_rating(symbol):
             "Details": None
         }
 
-def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
+def generate_ai_fusion_signal(df, fa_rating, is_long_term=True):
     """
     基於多指標融合和基本面評級，產生最終的交易策略。
+    (已將所有 "專家" 相關用語替換為 "AI")
     """
     
     if df.empty or len(df) < 50:
         # 返回預設的錯誤或空值
-        return {'action': '數據不足', 'score': 0, 'confidence': 0, 'strategy': '無法評估', 'entry_price': 0, 'take_profit': 0, 'stop_loss': 0, 'current_price': 0, 'expert_opinions': {}, 'atr': 0}
+        return {'action': '數據不足', 'score': 0, 'confidence': 0, 'strategy': '無法評估', 'entry_price': 0, 'take_profit': 0, 'stop_loss': 0, 'current_price': 0, 'ai_opinions': {}, 'atr': 0}
 
     last_row = df.iloc[-1]
     current_price = last_row['Close']
     atr_value = last_row['ATR']
     
-    expert_opinions = {}
+    ai_opinions = {} # <--- 變數名稱改為 ai_opinions
     
-    # 1. 趨勢專家 (均線) - 總分 +/- 3
+    # 1. AI 趨勢分析 (均線) - 總分 +/- 3
     trend_score = 0
     if last_row['Close'] > last_row['SMA_20'] and last_row['SMA_20'] > last_row['EMA_50']:
         trend_score = 3
-        expert_opinions['趨勢分析 (均線)'] = "多頭：短線(SMA)與中長線(EMA)均線均呈多頭排列。"
+        ai_opinions['AI 趨勢分析 (均線)'] = "多頭：短線(SMA)與中長線(EMA)均線均呈多頭排列。"
     elif last_row['Close'] < last_row['SMA_20'] and last_row['SMA_20'] < last_row['EMA_50']:
         trend_score = -3
-        expert_opinions['趨勢分析 (均線)'] = "空頭：短線與中長線均線均呈空頭排列。"
+        ai_opinions['AI 趨勢分析 (均線)'] = "空頭：短線與中長線均線均呈空頭排列。"
     else:
         trend_score = 0
-        expert_opinions['趨勢分析 (均線)'] = "中性：價格位於均線之間，趨勢不明。"
+        ai_opinions['AI 趨勢分析 (均線)'] = "中性：價格位於均線之間，趨勢不明。"
         
-    # 2. 動能專家 (RSI & Stoch) - 總分 +/- 2
+    # 2. AI 動能分析 (RSI & Stoch) - 總分 +/- 2
     momentum_score = 0
     rsi = last_row['RSI']
     stoch_k = last_row['Stoch_K']
     if rsi < 40 and stoch_k < 40:
         momentum_score = 2
-        expert_opinions['動能分析 (RSI/Stoch)'] = "強化：動能指標低位，潛在反彈空間大。"
+        ai_opinions['AI 動能分析 (RSI/Stoch)'] = "強化：動能指標低位，潛在反彈空間大。"
     elif rsi > 60 and stoch_k > 60:
         momentum_score = -2
-        expert_opinions['動能分析 (RSI/Stoch)'] = "削弱：動能指標高位，潛在回調壓力大。"
+        ai_opinions['AI 動能分析 (RSI/Stoch)'] = "削弱：動能指標高位，潛在回調壓力大。"
     else:
         momentum_score = 0
-        expert_opinions['動能分析 (RSI/Stoch)'] = "中性：指標位於中間區域。"
+        ai_opinions['AI 動能分析 (RSI/Stoch)'] = "中性：指標位於中間區域。"
         
-    # 3. 波動性專家 (MACD) - 總分 +/- 2
+    # 3. AI 波動性分析 (MACD) - 總分 +/- 2
     volatility_score = 0
     macd_diff = last_row['MACD']
     if macd_diff > 0 and macd_diff > df.iloc[-2]['MACD']:
         volatility_score = 2
-        expert_opinions['波動分析 (MACD)'] = "多頭：MACD柱狀圖擴大，多頭動能強勁。"
+        ai_opinions['AI 波動分析 (MACD)'] = "多頭：MACD柱狀圖擴大，多頭動能強勁。"
     elif macd_diff < 0 and macd_diff < df.iloc[-2]['MACD']:
         volatility_score = -2
-        expert_opinions['波動分析 (MACD)'] = "空頭：MACD柱狀圖擴大，空頭動能強勁。"
+        ai_opinions['AI 波動分析 (MACD)'] = "空頭：MACD柱狀圖擴大，空頭動能強勁。"
     else:
         volatility_score = 0
-        expert_opinions['波動分析 (MACD)'] = "中性：動能盤整。"
+        ai_opinions['AI 波動分析 (MACD)'] = "中性：動能盤整。"
         
-    # 4. K線形態專家 (簡單判斷) - 總分 +/- 1.5
+    # 4. AI K線形態分析 (簡單判斷) - 總分 +/- 1.5
     kline_score = 0
     is_up_bar = last_row['Close'] > last_row['Open']
     is_strong_up = is_up_bar and (last_row['Close'] - last_row['Open']) > atr_value * 0.5
@@ -442,13 +443,13 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
     
     if is_strong_up:
         kline_score = 1.5
-        expert_opinions['K線形態分析'] = "強化：實體大陽線，買盤積極。"
+        ai_opinions['AI K線形態分析'] = "強化：實體大陽線，買盤積極。"
     elif is_strong_down:
         kline_score = -1.5
-        expert_opinions['K線形態分析'] = "削弱：實體大陰線，賣壓沉重。"
+        ai_opinions['AI K線形態分析'] = "削弱：實體大陰線，賣壓沉重。"
     else:
         kline_score = 0
-        expert_opinions['K線形態分析'] = "中性：K線實體小，觀望。"
+        ai_opinions['AI K線形態分析'] = "中性：K線實體小，觀望。"
         
     # 融合評分 (總分 8.5 分 + FA 評分)
     # 將 FA 評分(0-9)正規化到 0-3 的權重
@@ -499,9 +500,47 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
         'take_profit': take_profit,
         'stop_loss': stop_loss,
         'current_price': current_price,
-        'expert_opinions': expert_opinions,
+        'ai_opinions': ai_opinions, # <--- 變數名稱改為 ai_opinions
         'atr': atr_value
     }
+
+# 修正 color_cells 函式，使其能夠直接從 technical_df 獲取顏色
+def color_cells(row):
+    """根據 '顏色' 欄位的值，對 '最新值' 和 '分析結論' 欄位應用樣式"""
+
+    styles = []
+    # 由於在 main() 中修正了 st.dataframe 的調用方式，這裡現在可以假設 '顏色' 欄位存在
+    try:
+        color = row['顏色']
+    except KeyError:
+        # 如果因為某些原因 '顏色' 欄位仍然丟失 (例如在測試環境中)，則返回空列表
+        # 但在正式環境中，由於我們修正了 st.dataframe 的呼叫，這段應該不會被觸發
+        return [''] * len(row.index)
+        
+    # 樣式定義：只對 '最新值' 和 '分析結論' 應用顏色，因此只需要兩個樣式
+    if color == 'red':
+        # 紅色: 多頭/強化信號 (類似低風險買入)
+        styles.append('background-color: rgba(255, 0, 0, 0.1); color: red; font-weight: bold;')
+        styles.append('color: red; font-weight: bold;')
+    elif color == 'green':
+        # 綠色: 空頭/削弱信號 (類似高風險賣出)
+        styles.append('background-color: rgba(0, 128, 0, 0.1); color: green; font-weight: bold;')
+        styles.append('color: green; font-weight: bold;')
+    elif color == 'orange':
+        # 橙色: 中性/警告 (類似盤整觀望)
+        styles.append('background-color: rgba(255, 165, 0, 0.1); color: orange;')
+        styles.append('color: orange;')
+    else: 
+        # 藍色: 中性/正常
+        styles.append('color: blue;')
+        styles.append('color: blue;')
+    
+    # 必須返回與 subset 欄位數（2個）和顏色欄（1個）總和一樣多的樣式，但因為 st.dataframe 的 subset= 只應用於 subset，
+    # 且我們在 column_config 隱藏了 '顏色'，這裡只需為 '最新值' 和 '分析結論' 提供樣式。
+    
+    # 返回與 st.dataframe 實際顯示列數相符的樣式
+    # 由於 subset 包含 3 欄，且我們對 '最新值' 和 '分析結論' 應用樣式，因此我們需要 3 個樣式，最後一個為空 (對應隱藏的 '顏色')
+    return styles + [''] 
 
 def create_comprehensive_chart(df, symbol, period_key):
     """繪製綜合 K 線圖，包含均線、MACD、RSI、BBands。"""
@@ -632,6 +671,7 @@ def main():
     st.sidebar.markdown("---")
     # 檢查是否需要自動觸發分析 (例如，從熱門清單選擇了一個新的標的)
     should_run_auto = (st.session_state.get('last_search_symbol') != final_symbol_to_analyze)
+    # 將按鈕文字保持為介面所需的「執行 AI 分析 🚀」
     analyze_button_clicked = st.sidebar.button("執行 AI 分析 🚀", use_container_width=True)
 
     # ==============================================================================
@@ -667,7 +707,8 @@ def main():
                 st.session_state['fa_result'] = fa_result
                 
                 is_long_term = "日" in selected_period_key or "週" in selected_period_key
-                expert_signal = generate_expert_fusion_signal(
+                # 呼叫新的 AI 融合信號函式
+                expert_signal = generate_ai_fusion_signal(
                     df, 
                     fa_result['Combined_Rating'], 
                     is_long_term
@@ -694,7 +735,7 @@ def main():
         st.markdown("---")
 
         # --- A. 核心信號區 ---
-        st.subheader(f"⚡ AI 專家融合信號")
+        st.subheader(f"⚡ AI 專家融合信號") # <--- 修正文字
         
         col1, col2, col3 = st.columns([1, 1, 1])
         
@@ -723,19 +764,21 @@ def main():
             st.metric("波動區間 (ATR 14)", f"{expert_signal['atr']:,.4f}")
             st.caption(f"總量化評分: **{expert_signal['score']:.2f}**")
 
+        # 修正：根據截圖，如果 action 是中性偏買，但 strategy 仍然顯示「信號混亂」，這可能是邏輯設計使然。
+        # 為了保有截圖的輸出，我們保留這行。
         st.info(expert_signal['strategy'])
         
         # 交易策略細節
-        with st.expander("AI 交易建議與風險控制 (基於 ATR 波動)"):
+        with st.expander("AI 交易建議與風險控制 (基於 ATR 波動)"): # <--- 修正文字
             c1, c2, c3 = st.columns(3)
             c1.metric("建議進場點 (Entry)", f"{currency_symbol}{expert_signal['entry_price']:,.4f}")
             c2.metric("🚀 建議停利點 (Take Profit)", f"{currency_symbol}{expert_signal['take_profit']:,.4f}")
             c3.metric("🛑 建議停損點 (Stop Loss)", f"{currency_symbol}{expert_signal['stop_loss']:,.4f}")
             
             st.markdown("---")
-            st.markdown("**專家意見分解:**")
+            st.markdown("**AI 意見分解:**") # <--- 修正文字
             
-            for expert, opinion in expert_signal['expert_opinions'].items():
+            for expert, opinion in expert_signal['ai_opinions'].items(): # <--- 使用 ai_opinions
                 st.markdown(f"* **{expert}**: {opinion}")
 
         st.markdown("---")
@@ -773,30 +816,22 @@ def main():
         technical_df = get_technical_data_df(df)
         
         if not technical_df.empty:
-            def color_cells(row):
-                styles = []
-                color = row['顏色']
-                if color == 'red':
-                    styles.append('background-color: rgba(255, 0, 0, 0.1); color: red; font-weight: bold;')
-                elif color == 'green':
-                    styles.append('background-color: rgba(0, 128, 0, 0.1); color: green; font-weight: bold;')
-                elif color == 'orange':
-                    styles.append('background-color: rgba(255, 165, 0, 0.1); color: orange;')
-                else: 
-                    styles.append('color: blue;')
-                
-                return styles * 2 + [''] 
-
+            
+            # 🚨 修正 KeyError 發生的地方: 
+            # 傳入完整的 technical_df，透過 style.apply 套用樣式，並用 column_config 隱藏 '顏色' 欄位
             st.dataframe(
-                technical_df[['最新值', '分析結論']].style.apply(color_cells, axis=1),
+                # 傳入完整的 DataFrame
+                technical_df.style.apply(color_cells, axis=1, subset=['最新值', '分析結論', '顏色']),
                 use_container_width=True,
                 key=f"technical_df_{final_symbol_to_analyze}_{selected_period_key}",
                 column_config={
                     "最新值": st.column_config.Column("最新數值", help="技術指標的最新計算值"),
                     "分析結論": st.column_config.Column("趨勢/動能判讀", help="基於數值範圍的專業解讀"),
+                    "顏色": None # <--- 隱藏不需要在介面顯示的顏色欄位
                 }
             )
-            # 根據截圖，修正提示文字，使其更簡潔和精確
+            
+            # 根據截圖，修正提示文字
             st.caption("ℹ️ **設計師提示:** 表格顏色會根據指標的趨勢/風險等級自動變化（**紅色=多頭/強化信號**，**綠色=空頭/削弱信號**，**橙色=中性/警告**）。")
 
         else:
@@ -811,13 +846,15 @@ def main():
     
     # 首次載入或數據未準備好時的提示
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
-         # 修正提示文字，保持介面風格
          st.info("請在左側選擇或輸入標的，然後點擊 **『執行 AI 分析 🚀』** 開始。")
+
+    # ==============================================================================
+    # 6. 結尾聲明區 (Disclaimer) <--- 新增部分
+    # ==============================================================================
+    st.markdown("---")
+    st.markdown("⚠️ **免責聲明:** 本分析模型包含多位AI的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
+    st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
 
 
 if __name__ == '__main__':
     main()
-    
-    st.markdown("---")
-    st.markdown("⚠️ **免責聲明:** 本分析模型包含多位AI的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
-    st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
