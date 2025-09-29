@@ -737,29 +737,40 @@ def main():
         <style>
         /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (將顏色改為 #ff9933) */
         [data-testid="stSidebar"] .stButton button {
-            color: #ff9933 !important; /* 🔥 亮橙色文字 (使用者要求) */
+            color: #ff9933 !important; /* 🔥 亮橙色文字 */
             background-color: rgba(255, 255, 255, 0.1) !important; /* 透明背景 */
-            border-color: #ff9933 !important; /* 🔥 亮橙色邊框 (與文字同色) */
-            border-width: 1px !important;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
+            border-color: #ff9933 !important; /* 🔥 亮橙色邊框 */
+            
+            /* 【核心修改 1】 增強邊框厚度 */
+            border-width: 2px !important; 
+            
+            /* 【核心修改 2】 增強靜態陰影 */
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1); 
+            
             border-radius: 8px;
             transition: all 0.3s ease;
         }
+        
         /* 2. 懸停 (Hover) 效果 */
         [data-testid="stSidebar"] .stButton button:hover {
             color: #cc6600 !important; 
-            background-color: rgba(255, 153, 51, 0.15) !important; /* 懸停背景色微調 */
+            /* 【核心修改 3】 懸停時背景色更飽和 */
+            background-color: rgba(255, 153, 51, 0.25) !important; 
             border-color: #cc6600 !important;
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); 
+            
+            /* 【核心修改 4】 懸停時陰影更突出 (上浮效果) */
+            box-shadow: 0 8px 15px rgba(255, 153, 51, 0.4), 0 3px 6px rgba(0, 0, 0, 0.15); 
         }
+        
         /* 3. 點擊 (Active/Focus) 效果 */
         [data-testid="stSidebar"] .stButton button:active,
         [data-testid="stSidebar"] .stButton button:focus {
             color: #ff9933 !important;
-            background-color: rgba(255, 153, 51, 0.25) !important;
+            background-color: rgba(255, 153, 51, 0.4) !important; /* 點擊時背景更深 */
             border-color: #ff9933 !important;
-            box-shadow: none !important; 
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset !important; /* 點擊時內凹效果 */
         }
+        
         /* 4. 修正主標題顏色 */
         h1 { color: #cc6600; } 
         
