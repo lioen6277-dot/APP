@@ -31,44 +31,84 @@ PERIOD_MAP = {
     "1 週 (長期)": ("max", "1wk")
 }
 
-# 🚀 您的【所有資產清單】(FULL_SYMBOLS_MAP) - 已包含多種資產
+# 🚀 您的【所有資產清單】(FULL_SYMBOLS_MAP)
 FULL_SYMBOLS_MAP = {
     # ----------------------------------------------------
     # A. 美股核心 (US Stocks) - 個股
     # ----------------------------------------------------
     "TSLA": {"name": "特斯拉", "keywords": ["特斯拉", "電動車", "TSLA", "Tesla"]},
     "NVDA": {"name": "輝達", "keywords": ["輝達", "英偉達", "AI", "NVDA", "Nvidia"]},
-    "AAPL": {"name": "蘋果", "keywords": ["蘋果", "手機", "AAPL", "Apple"]},
-    "MSFT": {"name": "微軟", "keywords": ["微軟", "雲端", "MSFT", "Microsoft"]},
-    "GOOGL": {"name": "Alphabet (Google)", "keywords": ["谷歌", "Google", "GOOGL"]},
-    "AMZN": {"name": "亞馬遜", "keywords": ["亞馬遜", "電商", "AMZN", "Amazon"]},
+    "AAPL": {"name": "蘋果", "keywords": ["蘋果", "Apple", "AAPL"]},
+    "GOOGL": {"name": "谷歌/Alphabet", "keywords": ["谷歌", "Alphabet", "GOOGL", "GOOG"]},
+    "MSFT": {"name": "微軟", "keywords": ["微軟", "Microsoft", "MSFT"]},
+    "AMZN": {"name": "亞馬遜", "keywords": ["亞馬遜", "Amazon", "AMZN"]},
     "META": {"name": "Meta/臉書", "keywords": ["臉書", "Meta", "FB", "META"]},
     "NFLX": {"name": "網飛", "keywords": ["網飛", "Netflix", "NFLX"]},
+    "ADBE": {"name": "Adobe", "keywords": ["Adobe", "ADBE"]},
+    "CRM": {"name": "Salesforce", "keywords": ["Salesforce", "CRM"]},
+    "ORCL": {"name": "甲骨文", "keywords": ["甲骨文", "Oracle", "ORCL"]},
+    "COST": {"name": "好市多", "keywords": ["好市多", "Costco", "COST"]},
+    "JPM": {"name": "摩根大通", "keywords": ["摩根大通", "JPMorgan", "JPM"]},
+    "V": {"name": "Visa", "keywords": ["Visa", "V"]},
+    "WMT": {"name": "沃爾瑪", "keywords": ["沃爾瑪", "Walmart", "WMT"]},
+    "PG": {"name": "寶潔", "keywords": ["寶潔", "P&G", "PG"]},
+    "KO": {"name": "可口可樂", "keywords": ["可口可樂", "CocaCola", "KO"]},
+    "PEP": {"name": "百事", "keywords": ["百事", "Pepsi", "PEP"]},
+    "MCD": {"name": "麥當勞", "keywords": ["麥當勞", "McDonalds", "MCD"]},
+    "QCOM": {"name": "高通", "keywords": ["高通", "Qualcomm", "QCOM"]},
+    "INTC": {"name": "英特爾", "keywords": ["英特爾", "Intel", "INTC"]},
+    "AMD": {"name": "超微", "keywords": ["超微", "AMD"]},
     "LLY": {"name": "禮來", "keywords": ["禮來", "EliLilly", "LLY"]},
+    "UNH": {"name": "聯合健康", "keywords": ["聯合健康", "UNH"]},
+    "HD": {"name": "家得寶", "keywords": ["家得寶", "HomeDepot", "HD"]},
+    "CAT": {"name": "開拓重工", "keywords": ["開拓重工", "Caterpillar", "CAT"]},
     # B. 美股指數/ETF (US Indices/ETFs)
     "^GSPC": {"name": "S&P 500 指數", "keywords": ["標普", "S&P500", "^GSPC", "SPX"]},
     "^IXIC": {"name": "NASDAQ 綜合指數", "keywords": ["納斯達克", "NASDAQ", "^IXIC"]},
+    "^DJI": {"name": "道瓊工業指數", "keywords": ["道瓊", "DowJones", "^DJI"]},
     "SPY": {"name": "SPDR 標普500 ETF", "keywords": ["SPY", "標普ETF"]},
     "QQQ": {"name": "Invesco QQQ Trust", "keywords": ["QQQ", "納斯達克ETF"]},
+    "VOO": {"name": "Vanguard 標普500 ETF", "keywords": ["VOO", "Vanguard"]},
     # ----------------------------------------------------
-    # C. 台股核心 (TW Stocks) - AI/科技/權值
+    # C. 台灣市場 (TW Stocks/ETFs/Indices)
     # ----------------------------------------------------
-    "2330.TW": {"name": "台積電", "keywords": ["台積電", "晶圓", "2330", "TSMC"]},
-    "2454.TW": {"name": "聯發科", "keywords": ["聯發科", "晶片", "2454"]},
-    "2317.TW": {"name": "鴻海", "keywords": ["鴻海", "富士康", "2317"]},
-    "3017.TW": {"name": "奇鋐", "keywords": ["奇鋐", "散熱", "AI", "3017"]},
-    "6669.TW": {"name": "緯穎", "keywords": ["緯穎", "伺服器", "6669"]},
-    "0050.TW": {"name": "元大台灣50", "keywords": ["0050", "台灣50"]},
-    "^TWII": {"name": "台灣加權指數", "keywords": ["加權", "台股大盤"]},
+    "2330.TW": {"name": "台積電", "keywords": ["台積電", "2330", "TSMC"]},
+    "2317.TW": {"name": "鴻海", "keywords": ["鴻海", "2317", "Foxconn"]},
+    "2454.TW": {"name": "聯發科", "keywords": ["聯發科", "2454", "MediaTek"]},
+    "2308.TW": {"name": "台達電", "keywords": ["台達電", "2308", "Delta"]},
+    "3017.TW": {"name": "奇鋐", "keywords": ["奇鋐", "3017", "散熱"]},
+    "3231.TW": {"name": "緯創", "keywords": ["緯創", "3231"]},
+    "2382.TW": {"name": "廣達", "keywords": ["廣達", "2382"]},
+    "2379.TW": {"name": "瑞昱", "keywords": ["瑞昱", "2379"]},
+    "2881.TW": {"name": "富邦金", "keywords": ["富邦金", "2881"]},
+    "2882.TW": {"name": "國泰金", "keywords": ["國泰金", "2882"]},
+    "2603.TW": {"name": "長榮", "keywords": ["長榮", "2603", "航運"]},
+    "2609.TW": {"name": "陽明", "keywords": ["陽明", "2609", "航運"]},
+    "2615.TW": {"name": "萬海", "keywords": ["萬海", "2615", "航運"]},
+    "2891.TW": {"name": "中信金", "keywords": ["中信金", "2891"]},
+    "1101.TW": {"name": "台泥", "keywords": ["台泥", "1101"]},
+    "1301.TW": {"name": "台塑", "keywords": ["台塑", "1301"]},
+    "2357.TW": {"name": "華碩", "keywords": ["華碩", "2357"]},
+    "0050.TW": {"name": "元大台灣50", "keywords": ["台灣50", "0050", "台灣五十"]},
+    "0056.TW": {"name": "元大高股息", "keywords": ["高股息", "0056"]},
+    "00878.TW": {"name": "國泰永續高股息", "keywords": ["00878", "國泰永續"]},
+    "^TWII": {"name": "台股指數", "keywords": ["台股指數", "加權指數", "^TWII"]},
     # ----------------------------------------------------
     # D. 加密貨幣 (Crypto)
     # ----------------------------------------------------
-    "BTC-USD": {"name": "比特幣", "keywords": ["比特幣", "BTC"]},
-    "ETH-USD": {"name": "以太幣", "keywords": ["以太幣", "ETH"]},
-    "SOL-USD": {"name": "Solana", "keywords": ["Solana", "SOL"]},
+    "BTC-USD": {"name": "比特幣", "keywords": ["比特幣", "BTC", "bitcoin", "BTC-USDT"]},
+    "ETH-USD": {"name": "以太坊", "keywords": ["以太坊", "ETH", "ethereum", "ETH-USDT"]},
+    "SOL-USD": {"name": "Solana", "keywords": ["Solana", "SOL", "SOL-USDT"]},
+    "BNB-USD": {"name": "幣安幣", "keywords": ["幣安幣", "BNB", "BNB-USDT"]},
+    "DOGE-USD": {"name": "狗狗幣", "keywords": ["狗狗幣", "DOGE", "DOGE-USDT"]},
+    "XRP-USD": {"name": "瑞波幣", "keywords": ["瑞波幣", "XRP", "XRP-USDT"]},
+    "ADA-USD": {"name": "Cardano", "keywords": ["Cardano", "ADA", "ADA-USDT"]},
+    "AVAX-USD": {"name": "Avalanche", "keywords": ["Avalanche", "AVAX", "AVAX-USDT"]},
+    "DOT-USD": {"name": "Polkadot", "keywords": ["Polkadot", "DOT", "DOT-USDT"]},
+    "LINK-USD": {"name": "Chainlink", "keywords": ["Chainlink", "LINK", "LINK-USDT"]},
 }
 
-# 🎯 側邊欄資產分類
+# 🎯 新增兩層選擇的類別與熱門選項映射 (基於 FULL_SYMBOLS_MAP)
 CATEGORY_MAP = {
     "美股 (US) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if not (c.endswith(".TW") or c.endswith("-USD") or c.startswith("^TWII"))],
     "台股 (TW) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if c.endswith(".TW") or c.startswith("^TWII")],
@@ -91,59 +131,57 @@ for category, codes in CATEGORY_MAP.items():
 # ==============================================================================
 
 def get_symbol_from_query(query: str) -> str:
-    """解析用戶輸入，嘗試匹配並補齊 YFinance 代碼 (例如: 2330 -> 2330.TW)。"""
+    """
+    🎯 進化後的代碼解析函數：
+    同時檢查 FULL_SYMBOLS_MAP
+    """
     query = query.strip()
     # 1. 優先精確代碼/英文關鍵字匹配 (轉大寫)
     query_upper = query.upper()
     for code, data in FULL_SYMBOLS_MAP.items():
-        if query_upper == code:
+        # 檢查 YFinance 代碼 (2330.TW, BNB-USD)
+        if query_upper == code: # code 本身就是 yfinance_code
             return code
+        # 檢查英文關鍵詞 (TSMC, BNB, BTC-USDT)
         if any(query_upper == kw.upper() for kw in data["keywords"]):
-            return code
-    # 2. 中文名稱精確匹配
+            return code # 返回 FULL_SYMBOLS_MAP 中的標準代碼
+    # 2. 中文名稱精確匹配 (不轉大寫)
     for code, data in FULL_SYMBOLS_MAP.items():
         if query == data["name"]:
             return code
-    # 3. 台灣股票代碼自動補齊
+    # 3. 台灣股票代碼自動補齊 (例如: 2317 -> 2317.TW)
     if re.fullmatch(r'\d{4,6}', query) and not any(ext in query_upper for ext in ['.TW', '.HK', '.SS', '-USD']):
+        # 如果純數字代碼在 FULL_SYMBOLS_MAP 中有對應，則補齊
         tw_code = f"{query}.TW"
         if tw_code in FULL_SYMBOLS_MAP:
              return tw_code
-        return tw_code # 即使不在清單，仍嘗試補齊
-    # 4. 沒匹配到任何預設代碼，直接返回用戶輸入
+        # 如果不在清單，仍嘗試補齊 (交給 yfinance 驗證)
+        return tw_code
+    # 4. 沒匹配到任何預設代碼，直接返回用戶輸入 (交給 yfinance 處理)
     return query
 
 @st.cache_data(ttl=3600, show_spinner="正在從 Yahoo Finance 獲取數據...")
 def get_stock_data(symbol, period, interval):
-    """
-    獲取股票數據。核心修正：返回最新的「已完成 K 線」數據。
-    """
     try:
         ticker = yf.Ticker(symbol)
-        # 為了應對 yfinance 間歇性故障，嘗試兩次
-        for _ in range(2):
-            df = ticker.history(period=period, interval=interval)
-            if not df.empty:
-                break
-            time.sleep(1)
+        df = ticker.history(period=period, interval=interval)
         
         if df.empty:
             return pd.DataFrame()
         
         df.columns = [col.capitalize() for col in df.columns] 
         df.index.name = 'Date'
-        df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
         
-        # 🚩 核心修正：移除最後一筆（通常是未結束的當前K線，以確保指標計算的準確性）
-        return df.iloc[:-1]
-    except Exception:
+        df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
+        return df.iloc[:-1] # 移除最後一筆可能不完整的資料
+    except Exception as e:
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
 def get_company_info(symbol):
-    """獲取公司名稱、類別和貨幣資訊"""
     info = FULL_SYMBOLS_MAP.get(symbol, {})
     if info:
+        # 從 FULL_SYMBOLS_MAP 中推導出 category 和 currency
         if symbol.endswith(".TW") or symbol.startswith("^TWII"):
             category = "台股 (TW)"
             currency = "TWD"
@@ -152,26 +190,29 @@ def get_company_info(symbol):
             currency = "USD"
         else:
             category = "美股 (US)"
-            currency = "USD"
+            currency = "USD" # 預設美股為 USD
+            
         return {"name": info['name'], "category": category, "currency": currency}
     
-    # 嘗試從 YFinance 獲取更詳細資訊 (用於自訂標的)
     try:
         ticker = yf.Ticker(symbol)
         yf_info = ticker.info
         name = yf_info.get('longName') or yf_info.get('shortName') or symbol
         currency = yf_info.get('currency') or "USD"
         category = "未分類"
+        
+        # 嘗試從代碼判斷類別
         if symbol.endswith(".TW"): category = "台股 (TW)"
         elif symbol.endswith("-USD"): category = "加密貨幣 (Crypto)"
         elif symbol.startswith("^"): category = "指數"
         elif currency == "USD": category = "美股 (US)"
+
         return {"name": name, "category": category, "currency": currency}
     except:
         return {"name": symbol, "category": "未分類", "currency": "USD"}
-
+    
+@st.cache_data
 def get_currency_symbol(symbol):
-    """根據貨幣代碼返回符號"""
     currency_code = get_company_info(symbol).get('currency', 'USD')
     if currency_code == 'TWD':
         return 'NT$'
@@ -183,52 +224,47 @@ def get_currency_symbol(symbol):
         return currency_code + ' '
 
 def calculate_technical_indicators(df):
-    """計算並將技術指標加入 DataFrame"""
-    if len(df) < 50: 
-        return df # 數據不足跳過
-
-    # 趨勢指標
+    
     df['SMA_20'] = ta.trend.sma_indicator(df['Close'], window=20)
     df['EMA_50'] = ta.trend.ema_indicator(df['Close'], window=50)
-    
-    # 動能指標
     df['MACD'] = ta.trend.macd_diff(df['Close'])
     df['RSI'] = ta.momentum.rsi(df['Close'])
-    df['Stoch_K'] = ta.momentum.stoch(df['High'], df['Low'], df['Close'], window=14, smooth_window=3)
-    
-    # 波動性指標
     df['BB_High'] = ta.volatility.bollinger_hband(df['Close'])
     df['BB_Low'] = ta.volatility.bollinger_lband(df['Close'])
     df['ATR'] = ta.volatility.average_true_range(df['High'], df['Low'], df['Close'], window=14)
+    df['Stoch_K'] = ta.momentum.stoch(df['High'], df['Low'], df['Close'], window=14, smooth_window=3)
     
     return df
 
 def get_technical_data_df(df):
-    """根據最新技術指標數據生成帶有判讀結論的 DataFrame"""
+    
     if df.empty or len(df) < 50: 
         return pd.DataFrame()
 
     last_row = df.iloc[-1]
     
-    # 收集需要顯示的指標及其基準值
-    indicators_to_display = {
-        '收盤價 vs SMA-20': last_row['Close'],
-        '收盤價 vs EMA-50': last_row['Close'],
-        'RSI (14)': last_row['RSI'],
-        'Stochastics (%K)': last_row['Stoch_K'],
-        'MACD 柱狀圖 (Signal)': last_row['MACD'],
-        'ATR (14)': last_row['ATR'],
-        '布林通道 (BB)': last_row['Close'],
-    }
+    indicators = {}
+    
+    # 趨勢指標
+    indicators['收盤價 vs SMA-20'] = last_row['Close']
+    indicators['收盤價 vs EMA-50'] = last_row['Close']
+    
+    # 動能指標
+    indicators['RSI (14)'] = last_row['RSI']
+    indicators['Stochastics (%K)'] = last_row['Stoch_K']
+    indicators['MACD 柱狀圖 (Signal)'] = last_row['MACD']
+    
+    # 波動性與通道
+    indicators['ATR (14)'] = last_row['ATR']
+    indicators['布林通道 (BB)'] = last_row['Close']
     
     data = []
     
-    for name, value in indicators_to_display.items():
-        conclusion = "中性：數據正常"
-        color = "blue"
+    for name, value in indicators.items():
+        conclusion = ""
+        color = "grey"
         
-        # 趨勢判讀 (SMA/EMA)
-        if 'SMA-20' in name:
+        if name == '收盤價 vs SMA-20':
             ma = last_row['SMA_20']
             if value > ma * 1.01:
                 conclusion = "多頭：價格強勢站上均線"
@@ -236,14 +272,11 @@ def get_technical_data_df(df):
             elif value < ma * 0.99:
                 conclusion = "空頭：價格跌破均線"
                 color = "green"
-            elif value > ma:
-                conclusion = "中性偏多：價格位於均線之上"
-                color = "orange"
             else:
-                conclusion = "中性偏空：價格位於均線之下"
+                conclusion = "中性：盤整或趨勢發展中"
                 color = "orange"
         
-        elif 'EMA-50' in name:
+        elif name == '收盤價 vs EMA-50':
             ma = last_row['EMA_50']
             if value > ma * 1.02:
                 conclusion = "多頭：中長線趨勢強勁"
@@ -251,22 +284,21 @@ def get_technical_data_df(df):
             elif value < ma * 0.98:
                 conclusion = "空頭：中長線趨勢疲軟"
                 color = "green"
-            elif value > ma:
-                conclusion = "中性偏多：位於中長線均線之上"
-                color = "orange"
             else:
-                conclusion = "中性偏空：位於中長線均線之下"
+                conclusion = "中性：中長線盤整"
                 color = "orange"
 
-        # 動能判讀 (RSI/Stoch)
         elif name == 'RSI (14)':
             if value > 70:
                 conclusion = "警告：超買區域，潛在回調"
-                color = "green"
+                color = "green" # 綠色代表潛在賣出信號/風險
             elif value < 30:
                 conclusion = "強化：超賣區域，潛在反彈"
-                color = "red"
-        
+                color = "red" # 紅色代表潛在買入信號/強化
+            else:
+                conclusion = "中性：正常波動性"
+                color = "blue"
+
         elif name == 'Stochastics (%K)':
             if value > 80:
                 conclusion = "警告：接近超買區域"
@@ -274,6 +306,9 @@ def get_technical_data_df(df):
             elif value < 20:
                 conclusion = "強化：接近超賣區域"
                 color = "red"
+            else:
+                conclusion = "中性：正常波動性"
+                color = "blue"
 
         elif name == 'MACD 柱狀圖 (Signal)':
             if value > 0 and last_row['MACD'] > df.iloc[-2]['MACD']:
@@ -283,76 +318,85 @@ def get_technical_data_df(df):
                 conclusion = "削弱：空頭動能增強 (死叉趨勢)"
                 color = "green"
             else:
-                conclusion = "中性：動能盤整/轉折中"
+                conclusion = "中性：動能盤整"
                 color = "orange"
         
-        # 波動性判讀 (ATR)
         elif name == 'ATR (14)':
             avg_atr = df['ATR'].mean()
             if value > avg_atr * 1.5:
                 conclusion = "警告：極高波動性"
-                color = "green" # 高波動視為高風險
+                color = "green"
             elif value < avg_atr * 0.5:
-                conclusion = "中性：低波動性 (盤整待突破)"
+                conclusion = "中性：低波動性"
                 color = "orange"
+            else:
+                conclusion = "中性：正常波動性"
+                color = "blue"
 
-        # 布林通道判讀
         elif name == '布林通道 (BB)':
             high = last_row['BB_High']
             low = last_row['BB_Low']
             range_pct = (high - low) / low
-            
             if value > high:
-                conclusion = "警告：價格位於上軌外側 (極度超強勢)"
+                conclusion = "警告：價格位於上軌外側 (超強勢)"
                 color = "red"
             elif value < low:
-                conclusion = "強化：價格位於下軌外側 (極度超弱勢)"
+                conclusion = "強化：價格位於下軌外側 (超弱勢)"
                 color = "green"
             else:
                 conclusion = f"中性：在上下軌間 ({range_pct*100:.2f}% 寬度)"
                 color = "blue"
-        
-        data.append([name, value, conclusion, color])
 
+        data.append([name, value, conclusion, color])
+        
     technical_df = pd.DataFrame(data, columns=['指標名稱', '最新值', '分析結論', '顏色'])
     technical_df = technical_df.set_index('指標名稱')
     return technical_df
 
-@st.cache_data(ttl=3600)
 def calculate_fundamental_rating(symbol):
-    """執行基本面分析，並返回 0-9 評分"""
-    
     try:
         ticker = yf.Ticker(symbol)
         info = ticker.info
         
         # 獲取關鍵基本面指標
-        roe = info.get('returnOnequity', 0)
+        roe = info.get('returnOnEquity', 0)
+        payoutRatio = info.get('payoutRatio', 0)
         freeCashFlow = info.get('freeCashflow', 0)
         totalCash = info.get('totalCash', 0)
         totalDebt = info.get('totalDebt', 0)
-        marketCap = info.get('marketCap', 1) 
+        marketCap = info.get('marketCap', 1)
         pe = info.get('trailingPE', 99)
         
-        # 1. 成長與效率評分 (ROE) - 滿分 3 分
-        roe_score = 0
-        if roe > 0.15: roe_score = 3 
-        elif roe > 0.08: roe_score = 2
-        elif roe > 0: roe_score = 1
-        
-        # 2. 估值評分 (PE) - 滿分 3 分
-        pe_score = 0
-        if pe < 15: pe_score = 3
-        elif pe < 25: pe_score = 2
-        elif pe < 35: pe_score = 1
-        
-        # 3. 現金流與償債能力 - 滿分 3 分
-        cf_score = 0
+        # 財務健康度 (Cash vs Debt)
         cash_debt_ratio = (totalCash / totalDebt) if totalDebt else 100
-        if freeCashFlow > 0.05 * marketCap and cash_debt_ratio > 1.5: cf_score = 3
-        elif freeCashFlow > 0 and cash_debt_ratio > 1: cf_score = 2
-        elif freeCashFlow > 0: cf_score = 1
-
+        
+        # 成長與效率評分 (ROE)
+        roe_score = 0
+        if roe > 0.15:
+            roe_score = 3
+        elif roe > 0.08:
+            roe_score = 2
+        elif roe > 0:
+            roe_score = 1
+            
+        # 估值評分 (PE)
+        pe_score = 0
+        if pe < 15:
+            pe_score = 3
+        elif pe < 25:
+            pe_score = 2
+        elif pe < 35:
+            pe_score = 1
+            
+        # 現金流與償債能力
+        cf_score = 0
+        if freeCashFlow > 0.05 * marketCap and cash_debt_ratio > 1.5:
+            cf_score = 3
+        elif freeCashFlow > 0 and cash_debt_ratio > 1:
+            cf_score = 2
+        elif freeCashFlow > 0:
+            cf_score = 1
+            
         # 綜合評級 (總分 9)
         combined_rating = roe_score + pe_score + cf_score
         
@@ -364,192 +408,148 @@ def calculate_fundamental_rating(symbol):
         elif combined_rating >= 3:
             message = "中性警示：存在財務壓力或估值過高，需警惕風險。"
         else:
-            message = "基本面較弱：財務指標不佳，不建議盲目進場。"
+            message = "基本面較弱：財務指標不佳，或數據缺失，不建議盲目進場。"
             
         return {
             "Combined_Rating": combined_rating,
             "Message": message,
             "Details": info
         }
-
-    except Exception:
-        # 指數、加密貨幣或數據庫無資料時
+    except Exception as e:
+        # st.warning(f"基本面數據獲取失敗或不適用: {e}") # Debugging
         return {
-            "Combined_Rating": 1.0, 
-            "Message": "基本面數據獲取失敗或不適用 (例如指數/加密貨幣)。",
+            "Combined_Rating": 1.0,
+            "Message": f"基本面數據獲取失敗或不適用 (例如指數/加密貨幣)。",
             "Details": None
         }
 
+# 【修正點 1.1: 函式名稱更新】將 'expert' 改為 'ai'
 def generate_ai_fusion_signal(df, fa_rating, is_long_term=True):
-    """
-    基於多指標融合和基本面評級，產生最終的交易策略。
-    (已將所有 "專家" 相關用語替換為 "AI")
-    """
+    if df.empty:
+        return {'action': '數據不足', 'score': 0, 'confidence': 0, 'strategy': '無法評估', 'entry_price': 0, 'take_profit': 0, 'stop_loss': 0, 'current_price': 0, 'ai_opinions': {}} # 【修正點 1.2: 鍵名更新】
     
-    if df.empty or len(df) < 50:
-        # 返回預設的錯誤或空值
-        return {'action': '數據不足', 'score': 0, 'confidence': 0, 'strategy': '無法評估', 'entry_price': 0, 'take_profit': 0, 'stop_loss': 0, 'current_price': 0, 'ai_opinions': {}, 'atr': 0}
-
     last_row = df.iloc[-1]
     current_price = last_row['Close']
     atr_value = last_row['ATR']
     
-    ai_opinions = {} # <--- 變數名稱改為 ai_opinions
-    
-    # 1. AI 趨勢分析 (均線) - 總分 +/- 3
-    trend_score = 0
-    if last_row['Close'] > last_row['SMA_20'] and last_row['SMA_20'] > last_row['EMA_50']:
-        trend_score = 3
-        ai_opinions['AI 趨勢分析 (均線)'] = "多頭：短線(SMA)與中長線(EMA)均線均呈多頭排列。"
-    elif last_row['Close'] < last_row['SMA_20'] and last_row['SMA_20'] < last_row['EMA_50']:
-        trend_score = -3
-        ai_opinions['AI 趨勢分析 (均線)'] = "空頭：短線與中長線均線均呈空頭排列。"
-    else:
-        trend_score = 0
-        ai_opinions['AI 趨勢分析 (均線)'] = "中性：價格位於均線之間，趨勢不明。"
-        
-    # 2. AI 動能分析 (RSI & Stoch) - 總分 +/- 2
-    momentum_score = 0
-    rsi = last_row['RSI']
-    stoch_k = last_row['Stoch_K']
-    if rsi < 40 and stoch_k < 40:
-        momentum_score = 2
-        ai_opinions['AI 動能分析 (RSI/Stoch)'] = "強化：動能指標低位，潛在反彈空間大。"
-    elif rsi > 60 and stoch_k > 60:
-        momentum_score = -2
-        ai_opinions['AI 動能分析 (RSI/Stoch)'] = "削弱：動能指標高位，潛在回調壓力大。"
-    else:
-        momentum_score = 0
-        ai_opinions['AI 動能分析 (RSI/Stoch)'] = "中性：指標位於中間區域。"
-        
-    # 3. AI 波動性分析 (MACD) - 總分 +/- 2
-    volatility_score = 0
-    macd_diff = last_row['MACD']
-    if macd_diff > 0 and macd_diff > df.iloc[-2]['MACD']:
-        volatility_score = 2
-        ai_opinions['AI 波動分析 (MACD)'] = "多頭：MACD柱狀圖擴大，多頭動能強勁。"
-    elif macd_diff < 0 and macd_diff < df.iloc[-2]['MACD']:
-        volatility_score = -2
-        ai_opinions['AI 波動分析 (MACD)'] = "空頭：MACD柱狀圖擴大，空頭動能強勁。"
-    else:
-        volatility_score = 0
-        ai_opinions['AI 波動分析 (MACD)'] = "中性：動能盤整。"
-        
-    # 4. AI K線形態分析 (簡單判斷) - 總分 +/- 1.5
-    kline_score = 0
-    is_up_bar = last_row['Close'] > last_row['Open']
-    is_strong_up = is_up_bar and (last_row['Close'] - last_row['Open']) > atr_value * 0.5
-    is_strong_down = not is_up_bar and (last_row['Open'] - last_row['Close']) > atr_value * 0.5
-    
-    if is_strong_up:
-        kline_score = 1.5
-        ai_opinions['AI K線形態分析'] = "強化：實體大陽線，買盤積極。"
-    elif is_strong_down:
-        kline_score = -1.5
-        ai_opinions['AI K線形態分析'] = "削弱：實體大陰線，賣壓沉重。"
-    else:
-        kline_score = 0
-        ai_opinions['AI K線形態分析'] = "中性：K線實體小，觀望。"
-        
-    # 融合評分 (總分 8.5 分 + FA 評分)
-    # 將 FA 評分(0-9)正規化到 0-3 的權重
-    fa_weight = (fa_rating / 9) * 3 
-    fusion_score = trend_score + momentum_score + volatility_score + kline_score + fa_weight
-    
-    # 最終行動
-    action = "觀望 (Neutral)"
-    if fusion_score >= 4.5:
-        action = "買進 (Buy)"
-    elif fusion_score >= 1.5:
-        action = "中性偏買 (Hold/Buy)"
-    elif fusion_score <= -4.5:
-        action = "賣出 (Sell/Short)"
-    elif fusion_score <= -1.5:
-        action = "中性偏賣 (Hold/Sell)"
+    # 【修正點 1.3: 意見字典更新】
+    ai_opinions = {}
 
-    # 信心指數 (將評分正規化到 0-100)
-    confidence = min(100, max(0, 50 + fusion_score * 5))
-    
-    # 風險控制與交易策略 (基於 ATR)
-    risk_multiple = 2.0 if is_long_term else 1.5 
-    reward_multiple = 2.0 
-    
-    # 定義策略
-    if "買進" in action:
-        entry = current_price * 0.99 
-        stop_loss = entry - (atr_value * risk_multiple)
-        take_profit = entry + (atr_value * risk_multiple * reward_multiple)
-        strategy_desc = f"基於**{action}**信號，建議考慮在 {entry:,.4f} 附近尋找進場點，並以 ATR 衡量風險。"
-    elif "賣出" in action:
-        entry = current_price * 1.01
-        stop_loss = entry + (atr_value * risk_multiple) 
-        take_profit = entry - (atr_value * risk_multiple * reward_multiple)
-        strategy_desc = f"基於**{action}**信號，建議考慮在 {entry:,.4f} 附近尋找放空點，並以 ATR 衡量風險。"
+    # 1. 趨勢AI (均線)
+    trend_score = 0
+    if last_row['Close'] > last_row['SMA_20'] and last_row['Close'] > last_row['EMA_50']:
+        trend_score += 3
+        ai_opinions['趨勢AI'] = "強勁多頭：短期(SMA-20)與中長線(EMA-50)趨勢皆向上。"
+    elif last_row['Close'] > last_row['SMA_20'] or last_row['Close'] > last_row['EMA_50']:
+        trend_score += 1.5
+        ai_opinions['趨勢AI'] = "偏向多頭：價格位於至少一條主要均線之上。"
     else:
-        entry = current_price
-        stop_loss = current_price - atr_value
-        take_profit = current_price + atr_value
-        strategy_desc = "市場信號混亂或處於盤整，建議等待趨勢明朗。無明確進場建議。"
+        trend_score -= 2
+        ai_opinions['趨勢AI'] = "偏向空頭：價格位於主要均線之下，趨勢疲軟。"
+
+    # 2. 動能AI (RSI, MACD)
+    momentum_score = 0
+    if last_row['RSI'] < 40 and last_row['MACD'] < 0:
+        momentum_score -= 2
+        ai_opinions['動能AI'] = "強勁空頭動能：RSI和MACD均顯示賣壓增強。"
+    elif last_row['RSI'] > 60 and last_row['MACD'] > 0:
+        momentum_score += 3
+        ai_opinions['動能AI'] = "強勁多頭動能：RSI和MACD均顯示買盤強勁。"
+    else:
+        momentum_score += 0
+        ai_opinions['動能AI'] = "中性動能：指標波動於正常區間，無明顯極端信號。"
+        
+    # 3. 風險AI (ATR, BB)
+    risk_score = 0
+    if last_row['Close'] > last_row['BB_High'] or last_row['Close'] < last_row['BB_Low']:
+        risk_score -= 1 # 價格在通道外，波動極大，風險高
+        ai_opinions['風險AI'] = "警告：價格已突破布林通道，極高波動性/超買超賣風險。"
+    else:
+        risk_score += 1
+        ai_opinions['風險AI'] = "低風險：價格在布林通道內，波動正常。"
+
+    # 4. 基本面AI (只用於中長線)
+    fundamental_score = 0
+    if is_long_term:
+        fa_rating_val = fa_rating.get("Combined_Rating", 0)
+        fundamental_score = (fa_rating_val / 9) * 4 # 權重分配
+        ai_opinions['基本面AI'] = fa_rating.get("Message", "數據不足或不適用。")
+    else:
+        ai_opinions['基本面AI'] = "短期分析，基本面影響權重較低。"
+
+    # 綜合評分 (總分範圍約 -4 到 10)
+    total_score = trend_score + momentum_score + risk_score + fundamental_score
+    
+    # 根據總分決定行動
+    action = "中性觀望"
+    confidence = 0
+    
+    if total_score >= 8:
+        action = "強烈買入"
+        confidence = 90
+    elif total_score >= 5:
+        action = "買入"
+        confidence = 70
+    elif total_score <= -4:
+        action = "強烈賣出"
+        confidence = 90
+    elif total_score <= -1:
+        action = "賣出"
+        confidence = 70
+    elif total_score >= 1.5 and total_score < 5:
+        action = "區間操作/謹慎買入"
+        confidence = 55
+    else:
+        action = "中性觀望"
+        confidence = 50
+
+    # 策略建議 (基於 ATR 設定止盈/損)
+    # 止盈: 價格 + 2 * ATR
+    # 止損: 價格 - 1 * ATR (買入) 或 價格 + 1 * ATR (賣出)
+    take_profit = current_price + 2 * atr_value
+    stop_loss = current_price - 1 * atr_value
+    strategy = f"入場價格約 {current_price:.2f}"
+    
+    if "買入" in action:
+        strategy += f"，建議止盈約 {take_profit:.2f}，止損約 {stop_loss:.2f} (風險回報比約 2:1)"
+    elif "賣出" in action:
+        take_profit = current_price - 2 * atr_value
+        stop_loss = current_price + 1 * atr_value
+        strategy += f"，建議止盈約 {take_profit:.2f}，止損約 {stop_loss:.2f} (風險回報比約 2:1)"
+    else:
+        strategy = "暫無明確方向，建議等待信號出現或持續區間操作。"
+        take_profit = 0
+        stop_loss = 0
 
     return {
         'action': action,
-        'score': round(fusion_score, 2),
-        'confidence': round(confidence, 0),
-        'strategy': strategy_desc,
-        'entry_price': entry,
+        'score': total_score,
+        'confidence': confidence,
+        'strategy': strategy,
+        'entry_price': current_price,
         'take_profit': take_profit,
         'stop_loss': stop_loss,
         'current_price': current_price,
-        'ai_opinions': ai_opinions, # <--- 變數名稱改為 ai_opinions
-        'atr': atr_value
+        'ai_opinions': ai_opinions # 【修正點 1.4: 返回鍵名更新】
     }
 
-# 修正 color_cells 函式，使其能夠直接從 technical_df 獲取顏色
-def color_cells(row):
-    """根據 '顏色' 欄位的值，對 '最新值' 和 '分析結論' 欄位應用樣式"""
 
-    styles = []
-    # 由於在 main() 中修正了 st.dataframe 的調用方式，這裡現在可以假設 '顏色' 欄位存在
-    try:
-        color = row['顏色']
-    except KeyError:
-        # 如果因為某些原因 '顏色' 欄位仍然丟失 (例如在測試環境中)，則返回空列表
-        # 但在正式環境中，由於我們修正了 st.dataframe 的呼叫，這段應該不會被觸發
-        return [''] * len(row.index)
-        
-    # 樣式定義：只對 '最新值' 和 '分析結論' 應用顏色，因此只需要兩個樣式
-    if color == 'red':
-        # 紅色: 多頭/強化信號 (類似低風險買入)
-        styles.append('background-color: rgba(255, 0, 0, 0.1); color: red; font-weight: bold;')
-        styles.append('color: red; font-weight: bold;')
-    elif color == 'green':
-        # 綠色: 空頭/削弱信號 (類似高風險賣出)
-        styles.append('background-color: rgba(0, 128, 0, 0.1); color: green; font-weight: bold;')
-        styles.append('color: green; font-weight: bold;')
-    elif color == 'orange':
-        # 橙色: 中性/警告 (類似盤整觀望)
-        styles.append('background-color: rgba(255, 165, 0, 0.1); color: orange;')
-        styles.append('color: orange;')
-    else: 
-        # 藍色: 中性/正常
-        styles.append('color: blue;')
-        styles.append('color: blue;')
-    
-    # 必須返回與 subset 欄位數（2個）和顏色欄（1個）總和一樣多的樣式，但因為 st.dataframe 的 subset= 只應用於 subset，
-    # 且我們在 column_config 隱藏了 '顏色'，這裡只需為 '最新值' 和 '分析結論' 提供樣式。
-    
-    # 返回與 st.dataframe 實際顯示列數相符的樣式
-    # 由於 subset 包含 3 欄，且我們對 '最新值' 和 '分析結論' 應用樣式，因此我們需要 3 個樣式，最後一個為空 (對應隱藏的 '顏色')
-    return styles + [''] 
+def create_comprehensive_chart(df, symbol_name, period_key):
+    """
+    創建包含 K 線圖、MACD、RSI 的綜合 Plotly 圖表。
+    """
+    # 創建子圖: 4 行, 1 列. 高度比例: K線(4), MACD(2), RSI(1), Stoch(1)
+    fig = make_subplots(
+        rows=4, cols=1, 
+        shared_xaxes=True, 
+        vertical_spacing=0.03,
+        row_heights=[0.6, 0.15, 0.15, 0.1],
+        specs=[[{"rowspan": 1}], [{"rowspan": 1}], [{"rowspan": 1}], [{"rowspan": 1}]]
+    )
 
-def create_comprehensive_chart(df, symbol, period_key):
-    """繪製綜合 K 線圖，包含均線、MACD、RSI、BBands。"""
-    
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.08, 
-                        row_heights=[0.6, 0.2, 0.2], 
-                        subplot_titles=(f"{symbol} 價格走勢 ({period_key})", "MACD 指標", "RSI 指標"))
-
-    # K線圖
+    # ------------------------------------
+    # Row 1: K線圖 (Candlestick)
+    # ------------------------------------
     fig.add_trace(
         go.Candlestick(
             x=df.index,
@@ -558,303 +558,357 @@ def create_comprehensive_chart(df, symbol, period_key):
             low=df['Low'],
             close=df['Close'],
             name='K線',
-            increasing_line_color='red', 
-            decreasing_line_color='green'
-        ),
-        row=1, col=1
+            showlegend=False
+        ), row=1, col=1
     )
-
-    # 均線與布林通道
-    fig.add_trace(go.Scatter(x=df.index, y=df['SMA_20'], line=dict(color='blue', width=1), name='SMA 20'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df.index, y=df['EMA_50'], line=dict(color='orange', width=1), name='EMA 50'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df.index, y=df['BB_High'], line=dict(color='gray', width=0.5, dash='dash'), name='BB High'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df.index, y=df['BB_Low'], line=dict(color='gray', width=0.5, dash='dash'), name='BB Low'), row=1, col=1)
-
-    # MACD 圖
-    colors = ['red' if val >= 0 else 'green' for val in df['MACD']]
-    fig.add_trace(go.Bar(x=df.index, y=df['MACD'], name='MACD 柱狀圖', marker_color=colors), row=2, col=1)
     
-    # RSI 圖
-    fig.add_trace(go.Scatter(x=df.index, y=df['RSI'], line=dict(color='purple', width=1), name='RSI'), row=3, col=1)
-    fig.add_hline(y=70, line_width=1, line_dash="dash", line_color="green", row=3, col=1)
-    fig.add_hline(y=30, line_width=1, line_dash="dash", line_color="red", row=3, col=1)
+    # 均線
+    fig.add_trace(go.Scatter(x=df.index, y=df['SMA_20'], line=dict(color='blue', width=1), name='SMA-20'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df.index, y=df['EMA_50'], line=dict(color='orange', width=1), name='EMA-50'), row=1, col=1)
+    # 布林通道
+    fig.add_trace(go.Scatter(x=df.index, y=df['BB_High'], line=dict(color='red', width=0.5, dash='dash'), name='BB上軌'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df.index, y=df['BB_Low'], line=dict(color='green', width=0.5, dash='dash'), name='BB下軌'), row=1, col=1)
+
+
+    # ------------------------------------
+    # Row 2: MACD
+    # ------------------------------------
+    # MACD 柱狀圖 (Histogram)
+    macd_hist_color = ['red' if val >= 0 else 'green' for val in df['MACD']]
+    fig.add_trace(
+        go.Bar(
+            x=df.index, 
+            y=df['MACD'], 
+            name='MACD Hist', 
+            marker_color=macd_hist_color,
+            showlegend=False
+        ), row=2, col=1
+    )
+    # MACD Line & Signal Line (使用 TA 庫的預設值)
+    fig.add_trace(go.Scatter(x=df.index, y=ta.trend.macd_line(df['Close']), line=dict(color='#008000', width=1), name='MACD Line', showlegend=False), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df.index, y=ta.trend.macd_signal(df['Close']), line=dict(color='#FF00FF', width=1), name='Signal Line', showlegend=False), row=2, col=1)
+
+    # ------------------------------------
+    # Row 3: RSI
+    # ------------------------------------
+    fig.add_trace(
+        go.Scatter(x=df.index, y=df['RSI'], line=dict(color='#A31515', width=1), name='RSI', showlegend=False), 
+        row=3, col=1
+    )
+    fig.add_hline(y=70, line_dash="dash", line_color="grey", row=3, col=1, annotation_text="超買 (70)", annotation_position="top left", annotation_font_size=10)
+    fig.add_hline(y=30, line_dash="dash", line_color="grey", row=3, col=1, annotation_text="超賣 (30)", annotation_position="bottom left", annotation_font_size=10)
     
-    # Layout 配置
+    # ------------------------------------
+    # Row 4: Stochastics (%K)
+    # ------------------------------------
+    fig.add_trace(
+        go.Scatter(x=df.index, y=df['Stoch_K'], line=dict(color='#00CED1', width=1), name='%K', showlegend=False), 
+        row=4, col=1
+    )
+    fig.add_hline(y=80, line_dash="dot", line_color="red", row=4, col=1)
+    fig.add_hline(y=20, line_dash="dot", line_color="green", row=4, col=1)
+
+    # ------------------------------------
+    # 佈局與美化
+    # ------------------------------------
     fig.update_layout(
-        height=800, 
-        xaxis_rangeslider_visible=False,
-        showlegend=True,
+        title=f"**{symbol_name}** - 綜合技術分析 ({period_key})",
+        xaxis_rangeslider_visible=False, # 隱藏底部的滑塊
         hovermode="x unified",
-        margin=dict(l=20, r=20, t=50, b=20)
+        template="plotly_dark",
+        margin=dict(l=20, r=20, t=50, b=20),
+        height=700
     )
-
-    fig.update_xaxes(showgrid=True, row=1, col=1)
-    fig.update_xaxes(showgrid=True, row=2, col=1)
-    fig.update_xaxes(showgrid=True, row=3, col=1, title_text="日期")
     
-    fig.update_yaxes(title_text="價格", row=1, col=1)
+    # 調整 Y 軸標題
+    fig.update_yaxes(title_text="價格 / 均線", row=1, col=1)
     fig.update_yaxes(title_text="MACD", row=2, col=1)
-    fig.update_yaxes(title_text="RSI", range=[0, 100], row=3, col=1)
+    fig.update_yaxes(title_text="RSI", row=3, col=1, range=[0, 100]) # 鎖定 RSI 範圍
+    fig.update_yaxes(title_text="%K", row=4, col=1, range=[0, 100]) # 鎖定 %K 範圍
+    
+    # 移除子圖間的 X 軸刻度，除了最後一個
+    fig.update_xaxes(showticklabels=False, row=1, col=1)
+    fig.update_xaxes(showticklabels=False, row=2, col=1)
+    fig.update_xaxes(showticklabels=False, row=3, col=1)
     
     return fig
 
+# 【修正點 2.1: 介面著色函式】
+def color_cells(row):
+    """根據 DataFrame 的 '顏色' 欄位為 '最新值', '分析結論', '顏色' 欄位上色"""
+    # 確保只處理有顏色的欄位
+    
+    # Red (多頭/強化) -> Light Red/Orange for strong signal
+    if row['顏色'] == 'red':
+        # 0.2 alpha for light background
+        styles = ['background-color: rgba(255, 69, 0, 0.2)'] * 3 
+    # Green (空頭/削弱) -> Light Green/Teal for weak signal/high risk
+    elif row['顏色'] == 'green':
+        styles = ['background-color: rgba(60, 179, 113, 0.2)'] * 3 
+    # Orange (中性/警告) -> Light Yellow/Orange for caution
+    elif row['顏色'] == 'orange':
+        styles = ['background-color: rgba(255, 165, 0, 0.2)'] * 3 
+    # Blue (中性/波動)
+    else: 
+        styles = [''] * 3
+        
+    return styles
 # ==============================================================================
-# 3. Streamlit 主程式 (Main App)
+# 3. Streamlit 主函式
 # ==============================================================================
 
 def main():
+    # 頁面標題與說明
+    st.title("🤖 AI 趨勢分析儀表板 📈")
+    st.markdown("---")
+
+    # 側邊欄：輸入與控制區
+    with st.sidebar:
+        st.header("🎯 標的與時間週期選擇")
+        
+        # 類別選擇 (第一層)
+        category_selection = st.selectbox(
+            "選擇資產類別:",
+            list(CATEGORY_MAP.keys())
+        )
+        
+        # 熱門標的選擇 (第二層)
+        hot_options = CATEGORY_HOT_OPTIONS.get(category_selection, {})
+        selected_code_name = st.selectbox(
+            "選擇熱門標的:",
+            list(hot_options.keys()),
+            key='hot_symbol_select'
+        )
+        
+        # 從選擇的名稱中取出代碼
+        selected_symbol = hot_options.get(selected_code_name, "")
+        
+        # 自由輸入框
+        user_input_symbol = st.text_input(
+            "或自行輸入代碼/名稱 (如 NVDA, 2330, 比特幣):",
+            value=selected_symbol,
+            key='user_input_symbol'
+        )
+        
+        # 時間週期選擇
+        selected_period_key = st.selectbox(
+            "選擇時間週期 (影響 K 線間隔):",
+            list(PERIOD_MAP.keys()),
+            key='period_select'
+        )
+        
+        st.markdown("---")
+        
+        # 【修正點 3.1: 按鈕名稱更新】
+        analyze_button_clicked = st.button("執行 AI 分析 🚀", use_container_width=True)
+        st.caption("點擊後將重新獲取數據並分析。")
+        
+        # 側邊欄底部提示
+        st.markdown("---")
+        st.info("💡 **操作提示:** \n1. 選擇類別或輸入代碼。\n2. 選擇週期。\n3. 點擊『執行 AI 分析』。")
+        
+    # 主頁面：顯示分析結果
+    
+    # 獲取代碼並處理輸入
+    symbol_to_analyze = user_input_symbol if user_input_symbol else selected_symbol
+    final_symbol_to_analyze = get_symbol_from_query(symbol_to_analyze)
+
     # Streamlit Session State 初始化，確保變數存在
     if 'last_search_symbol' not in st.session_state:
-        st.session_state['last_search_symbol'] = 'TSLA'
-    if 'data_ready' not in st.session_state:
+        st.session_state['last_search_symbol'] = ''
         st.session_state['data_ready'] = False
-    if 'data_df' not in st.session_state:
-        st.session_state['data_df'] = pd.DataFrame()
 
-    # 側邊欄 (Sidebar) 處理
-    st.sidebar.title("🛠️ 分析參數設定")
-
-    # --- 1. 標的選擇 ---
-    st.sidebar.subheader("1. 選擇分析標的")
-
-    category_selection = st.sidebar.selectbox(
-        "選擇類別:",
-        list(CATEGORY_MAP.keys()),
-        key='category_select'
-    )
-
-    hot_options = CATEGORY_HOT_OPTIONS.get(category_selection, {})
-    default_index = 0
-    try:
-        last_symbol = st.session_state.get('last_search_symbol', 'TSLA')
-        # 嘗試找到上次的符號在當前分類中的索引
-        last_display_name = next(k for k, v in hot_options.items() if v == last_symbol)
-        default_index = list(hot_options.keys()).index(last_display_name)
-    except StopIteration:
-        default_index = 0
-    
-    selected_display_name = st.sidebar.selectbox(
-        "選擇熱門標的:",
-        list(hot_options.keys()),
-        index=default_index,
-        key='hot_symbol_select'
-    )
-    
-    selected_symbol_from_hot = hot_options.get(selected_display_name, 'TSLA')
-
-    manual_input = st.sidebar.text_input(
-        "或手動輸入代碼/名稱 (e.g., NVDA, 2330, 台積電):", 
-        value=st.session_state.get('last_search_symbol', 'TSLA'),
-        key='manual_symbol_input'
-    )
-    
-    # 判斷最終要分析的代碼
-    # 優先使用手動輸入的值，除非它是預設值且熱門選項被修改
-    if manual_input and manual_input.strip() != st.session_state.get('last_search_symbol', 'TSLA'):
-        raw_symbol = manual_input
-    else:
-        raw_symbol = selected_symbol_from_hot
+    # 觸發分析邏輯 (當按鈕被點擊 或 輸入/週期有變動)
+    if analyze_button_clicked or (final_symbol_to_analyze and final_symbol_to_analyze != st.session_state.get('last_search_symbol', '')):
         
-    final_symbol_to_analyze = get_symbol_from_query(raw_symbol)
-    
-    # --- 2. 週期選擇 ---
-    st.sidebar.subheader("2. 選擇分析週期")
-    selected_period_key = st.sidebar.selectbox(
-        "選擇 K 線週期:",
-        list(PERIOD_MAP.keys()),
-        key='period_select'
-    )
-    
-    period, interval = PERIOD_MAP[selected_period_key]
-
-    # --- 3. 執行按鈕 ---
-    st.sidebar.markdown("---")
-    # 檢查是否需要自動觸發分析 (例如，從熱門清單選擇了一個新的標的)
-    should_run_auto = (st.session_state.get('last_search_symbol') != final_symbol_to_analyze)
-    # 將按鈕文字保持為介面所需的「執行 AI 分析 🚀」
-    analyze_button_clicked = st.sidebar.button("執行 AI 分析 🚀", use_container_width=True)
-
-    # ==============================================================================
-    # 4. 資料獲取與處理
-    # ==============================================================================
-
-    # 只有在點擊按鈕或標的改變時才重新運行分析
-    if analyze_button_clicked or should_run_auto:
-        
-        # 如果是自動運行，只更新當前符號，不更新 last_search_symbol，讓用戶能繼續用手動輸入
-        if analyze_button_clicked:
-             st.session_state['last_search_symbol'] = final_symbol_to_analyze
-             
-        st.session_state['data_ready'] = False 
-
-        with st.spinner(f"正在分析 {final_symbol_to_analyze} 的數據..."):
-            
-            # 獲取股價數據 (已修正為只取完整 K 線)
-            df = get_stock_data(final_symbol_to_analyze, period, interval)
-            
-            if df.empty or len(df) < 50:
-                st.error(f"⚠️ **數據獲取失敗或不足!** 無法獲取 **{final_symbol_to_analyze}** 在此週期 ({selected_period_key}) 的數據，或數據不足 50 筆以計算指標。")
-                st.session_state['data_ready'] = False
-            else:
+        if final_symbol_to_analyze:
+            with st.spinner(f"正在分析 **{final_symbol_to_analyze}** 的數據..."):
+                
+                # 獲取參數
+                period, interval = PERIOD_MAP[selected_period_key]
+                
+                # 1. 獲取數據
+                df = get_stock_data(final_symbol_to_analyze, period, interval)
                 company_info = get_company_info(final_symbol_to_analyze)
+                currency_symbol = get_currency_symbol(final_symbol_to_analyze)
+                
+                st.session_state['last_search_symbol'] = final_symbol_to_analyze
+                st.session_state['data_ready'] = not df.empty
+                st.session_state['df'] = df
                 st.session_state['company_info'] = company_info
-                
-                # 技術指標計算 (所有指標都在這裡計算好)
-                df = calculate_technical_indicators(df)
-                st.session_state['data_df'] = df
-                
-                fa_result = calculate_fundamental_rating(final_symbol_to_analyze)
-                st.session_state['fa_result'] = fa_result
-                
-                is_long_term = "日" in selected_period_key or "週" in selected_period_key
-                # 呼叫新的 AI 融合信號函式
-                expert_signal = generate_ai_fusion_signal(
-                    df, 
-                    fa_result['Combined_Rating'], 
-                    is_long_term
-                )
-                st.session_state['expert_signal'] = expert_signal
+                st.session_state['selected_period_key'] = selected_period_key
+                st.session_state['currency_symbol'] = currency_symbol
+        
+        else:
+            st.warning("請在左側輸入有效的資產代碼或名稱。")
+            st.session_state['data_ready'] = False
+            return # 終止執行
 
-                st.session_state['data_ready'] = True
-                st.success(f"✅ {company_info['name']} ({final_symbol_to_analyze}) 數據分析完成！")
-
-    # ==============================================================================
-    # 5. 主內容區 (Main Content) 顯示
-    # ==============================================================================
-
+    # 顯示結果
     if st.session_state.get('data_ready', False):
-        
-        df = st.session_state['data_df']
-        fa_result = st.session_state['fa_result']
-        expert_signal = st.session_state['expert_signal']
+        df = st.session_state['df']
         company_info = st.session_state['company_info']
-        currency_symbol = get_currency_symbol(final_symbol_to_analyze)
+        selected_period_key = st.session_state['selected_period_key']
+        currency_symbol = st.session_state['currency_symbol']
         
-        st.title(f"🤖 {company_info['name']} ({final_symbol_to_analyze}) AI 趨勢分析儀表板")
-        st.caption(f"類別: **{company_info['category']}** | **基準價格時間**: **{df.index[-1].strftime('%Y-%m-%d %H:%M')}** ({selected_period_key} K線收盤價)")
-        st.markdown("---")
-
-        # --- A. 核心信號區 ---
-        st.subheader(f"⚡ AI 專家融合信號") # <--- 修正文字
+        # --------------------------------------------------
+        # 1. 標頭與基本資訊
+        # --------------------------------------------------
+        col1, col2, col3 = st.columns([1, 1.5, 3])
         
-        col1, col2, col3 = st.columns([1, 1, 1])
+        # 價格資訊 (最後一行數據)
+        if not df.empty:
+            last_price = df['Close'].iloc[-1]
+            prev_price = df['Close'].iloc[-2] if len(df) >= 2 else last_price
+            change_amount = last_price - prev_price
+            change_percent = (change_amount / prev_price) * 100 if prev_price else 0
+            
+            if change_amount > 0:
+                color = "green" if company_info['category'] == "美股 (US)" or company_info['category'] == "加密貨幣 (Crypto)" else "red"
+                delta_str = f"▲ {change_amount:,.2f} ({change_percent:+.2f}%)"
+            elif change_amount < 0:
+                color = "red" if company_info['category'] == "美股 (US)" or company_info['category'] == "加密貨幣 (Crypto)" else "green"
+                delta_str = f"▼ {change_amount:,.2f} ({change_percent:+.2f}%)"
+            else:
+                color = "gray"
+                delta_str = f"± 0.00 (0.00%)"
+                
+            # 標題
+            with col1:
+                st.subheader(f"{company_info['name']} ({final_symbol_to_analyze})")
+                st.metric(
+                    label=f"最新價格 ({currency_symbol})",
+                    value=f"{last_price:,.2f}",
+                    delta=delta_str,
+                    delta_color=color # Streamlit 的 color 設置是: Green(正), Red(負), Blue/Gray(中性)
+                )
+
+            with col2:
+                st.markdown(f"**類別**: {company_info['category']}")
+                st.markdown(f"**週期**: {selected_period_key}")
+                st.markdown(f"**數據量**: {len(df)} 筆資料 (從 {df.index[0].strftime('%Y-%m-%d')} 開始)")
+                
+        # 2. 獲取並顯示 AI 融合信號
+        df = calculate_technical_indicators(df)
+        fundamental_rating = calculate_fundamental_rating(final_symbol_to_analyze)
         
-        action = expert_signal['action']
-        if "買進" in action or "強化" in action:
-            signal_color = "red"
-        elif "賣出" in action or "削弱" in action:
-            signal_color = "green"
-        else:
-            signal_color = "orange"
-
-        with col1:
-            st.metric(
-                label=f"💰 基準價格 ({company_info['currency']})", 
-                value=f"{currency_symbol}{expert_signal['current_price']:,.4f}",
-                # 計算漲跌幅基於倒數第二根K線(即前一根完整K線)
-                delta=f"相較前K線: {((df['Close'].iloc[-1] / df['Close'].iloc[-2] - 1) * 100):.2f}%" if len(df) > 1 else "N/A"
-            )
-
-        with col2:
-            st.markdown(f"**🎯 綜合行動建議**")
-            st.markdown(f"<h3 style='color:{signal_color}; font-weight:bold;'>{action}</h3>", unsafe_allow_html=True)
-            st.caption(f"信心指數: **{int(expert_signal['confidence'])}/100**")
-
+        is_long_term = "日" in selected_period_key or "週" in selected_period_key or "長線" in selected_period_key
+        
+        # 【修正點 3.2: 呼叫函式名稱更新】
+        ai_signal = generate_ai_fusion_signal(df, fundamental_rating, is_long_term)
+        
+        # 3. AI 綜合判讀
         with col3:
-            st.metric("波動區間 (ATR 14)", f"{expert_signal['atr']:,.4f}")
-            st.caption(f"總量化評分: **{expert_signal['score']:.2f}**")
-
-        # 修正：根據截圖，如果 action 是中性偏買，但 strategy 仍然顯示「信號混亂」，這可能是邏輯設計使然。
-        # 為了保有截圖的輸出，我們保留這行。
-        st.info(expert_signal['strategy'])
-        
-        # 交易策略細節
-        with st.expander("AI 交易建議與風險控制 (基於 ATR 波動)"): # <--- 修正文字
-            c1, c2, c3 = st.columns(3)
-            c1.metric("建議進場點 (Entry)", f"{currency_symbol}{expert_signal['entry_price']:,.4f}")
-            c2.metric("🚀 建議停利點 (Take Profit)", f"{currency_symbol}{expert_signal['take_profit']:,.4f}")
-            c3.metric("🛑 建議停損點 (Stop Loss)", f"{currency_symbol}{expert_signal['stop_loss']:,.4f}")
+            st.subheader(f"🧠 AI 綜合分析信號")
+            signal_col1, signal_col2 = st.columns(2)
             
-            st.markdown("---")
-            st.markdown("**AI 意見分解:**") # <--- 修正文字
-            
-            for expert, opinion in expert_signal['ai_opinions'].items(): # <--- 使用 ai_opinions
-                st.markdown(f"* **{expert}**: {opinion}")
+            with signal_col1:
+                # 動作信號
+                if "買入" in ai_signal['action']:
+                    st.markdown(f"**建議動作**: <span style='font-size: 1.5em; color: #ff4b4b;'>**{ai_signal['action']}**</span>", unsafe_allow_html=True)
+                elif "賣出" in ai_signal['action']:
+                    st.markdown(f"**建議動作**: <span style='font-size: 1.5em; color: #00cc00;'>**{ai_signal['action']}**</span>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"**建議動作**: <span style='font-size: 1.5em;'>**{ai_signal['action']}**</span>", unsafe_allow_html=True)
 
-        st.markdown("---")
-
-        # --- B. 基本面分析區 ---
-        st.subheader("🏦 基本面與估值分析")
-        
-        fa_rating = fa_result['Combined_Rating']
-        if fa_rating >= 7:
-            fa_color = "red" 
-        elif fa_rating >= 5:
-            fa_color = "orange"
-        else:
-            fa_color = "green" 
+            with signal_col2:
+                # 信心度
+                st.metric(
+                    label="AI 信心度",
+                    value=f"{ai_signal['confidence']}%",
+                    delta_color="off"
+                )
             
-        st.markdown(f"**綜合評級:** <span style='color:{fa_color}; font-weight:bold; font-size:24px;'>{fa_rating:.1f}/9.0</span>", unsafe_allow_html=True)
-        st.warning(fa_result['Message'])
-        
-        if fa_result['Details']:
-             with st.expander("查看關鍵基本面指標"):
-                details = fa_result['Details']
-                st.json({
-                    "市值 (Market Cap)": f"{currency_symbol}{details.get('marketCap', 'N/A'):,.0f}",
-                    "本益比 (P/E)": f"{details.get('trailingPE', 'N/A'):.2f}",
-                    "股東權益報酬率 (ROE)": f"{details.get('returnOnEquity', 'N/A') * 100:.2f}%" if isinstance(details.get('returnOnEquity'), (int, float)) else "N/A",
-                    "自由現金流 (Free Cash Flow)": f"{currency_symbol}{details.get('freeCashflow', 'N/A'):,.0f}",
-                    "總負債/總現金 (Debt/Cash Ratio)": f"{details.get('totalDebt', 0) / (details.get('totalCash', 1) if details.get('totalCash', 1) > 0 else 1):.2f}"
-                })
+            # 策略建議
+            st.markdown(f"**策略建議**: {ai_signal['strategy']}")
         
         st.markdown("---")
+        
+        # --------------------------------------------------
+        # 2. 基本面 & AI 意見區
+        # --------------------------------------------------
+        fa_col, tech_col = st.columns([1, 1])
 
-        # --- C. 技術指標與圖表區 ---
-        st.subheader("🎯 關鍵技術指標判讀 (交叉驗證細節)")
+        with fa_col:
+            st.subheader(f"💰 基本面分析 ({company_info.get('category', '未分類')})")
+            if fundamental_rating['Details']:
+                rating_color = "red" if fundamental_rating['Combined_Rating'] >= 7 else ("orange" if fundamental_rating['Combined_Rating'] >= 5 else "green")
+                st.markdown(f"**綜合評級**: <span style='color: {rating_color}; font-size: 1.2em;'>**{fundamental_rating['Combined_Rating']:.1f} / 9.0**</span>", unsafe_allow_html=True)
+                st.markdown(f"**AI 解讀**: {fundamental_rating['Message']}")
+                st.markdown(f"**當前 P/E**: {fundamental_rating['Details'].get('trailingPE', 'N/A'):.2f}")
+            else:
+                st.info(f"基本面數據不適用於 {company_info.get('category', '此標的')} 或數據缺失。")
 
+
+        with tech_col:
+            # 【修正點 3.3: 意見標題更新】
+            st.subheader("💡 綜合 AI 意見")
+            ai_opinions_df = pd.DataFrame(ai_signal['ai_opinions'].items(), columns=['AI模組', '觀點'])
+            
+            # 使用 markdown 格式化輸出
+            for index, row in ai_opinions_df.iterrows():
+                 st.markdown(f"**{row['AI模組']}**: {row['觀點']}")
+
+        st.markdown("---")
+        
+        # --------------------------------------------------
+        # 3. 關鍵技術指標表格 (應用顏色樣式)
+        # --------------------------------------------------
+        
         technical_df = get_technical_data_df(df)
-        
         if not technical_df.empty:
+            st.subheader("📊 關鍵技術指標判讀")
             
-            # 🚨 修正 KeyError 發生的地方: 
-            # 傳入完整的 technical_df，透過 style.apply 套用樣式，並用 column_config 隱藏 '顏色' 欄位
+            # 【修正點 2.2: 應用樣式並隱藏輔助欄位】
+            # 使用 .style.apply 應用顏色函式
+            styled_df = technical_df.style.apply(color_cells, axis=1, subset=['最新值', '分析結論', '顏色'])
+
             st.dataframe(
-                # 傳入完整的 DataFrame
-                technical_df.style.apply(color_cells, axis=1, subset=['最新值', '分析結論', '顏色']),
+                styled_df,
                 use_container_width=True,
                 key=f"technical_df_{final_symbol_to_analyze}_{selected_period_key}",
                 column_config={
                     "最新值": st.column_config.Column("最新數值", help="技術指標的最新計算值"),
-                    "分析結論": st.column_config.Column("趨勢/動能判讀", help="基於數值範圍的專業解讀"),
-                    "顏色": None # <--- 隱藏不需要在介面顯示的顏色欄位
+                    "分析結論": st.column_config.Column("趨勢/動能判讀", help="基於數值範圍的AI解讀"),
+                    "顏色": None # 隱藏用於著色的輔助欄位
                 }
             )
-            
-            # 根據截圖，修正提示文字
-            st.caption("ℹ️ **設計師提示:** 表格顏色會根據指標的趨勢/風險等級自動變化（**紅色=多頭/強化信號**，**綠色=空頭/削弱信號**，**橙色=中性/警告**）。")
+            st.caption("ℹ️ **設計師提示:** 表格顏色會根據指標的趨勢/風險等級自動變化（**紅色=多頭/強化信號**（類似低風險買入），**綠色=空頭/削弱信號**（類似高風險賣出），**橙色=中性/警告**）。")
 
         else:
             st.info("無足夠數據生成關鍵技術指標表格。")
         
         st.markdown("---")
         
-        st.subheader(f"📊 完整技術分析圖表")
-        chart = create_comprehensive_chart(df, final_symbol_to_analyze, selected_period_key) 
+        # --------------------------------------------------
+        # 4. 完整技術分析圖表
+        # --------------------------------------------------
+        st.subheader(f"📈 完整技術分析圖表")
+        chart = create_comprehensive_chart(df, company_info['name'], selected_period_key) 
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
     
     # 首次載入或數據未準備好時的提示
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
-         st.info("請在左側選擇或輸入標的，然後點擊 **『執行 AI 分析 🚀』** 開始。")
+          # 【修正點 3.4: 提示資訊更新】
+         st.info("請在左側選擇或輸入標的，然後點擊 **『執行 AI 分析』** 開始。")
 
     # ==============================================================================
-    # 6. 結尾聲明區 (Disclaimer) <--- 新增部分
+    # 6. 結尾聲明區 (Disclaimer) 【修正點 4.1: 新增結尾聲明】
     # ==============================================================================
     st.markdown("---")
     st.markdown("⚠️ **免責聲明:** 本分析模型包含多位AI的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
-    st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
+    st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 開發團隊")
 
 
 if __name__ == '__main__':
+    # Streamlit Session State 初始化，確保變數存在
+    if 'last_search_symbol' not in st.session_state:
+        st.session_state['last_search_symbol'] = ''
+        st.session_state['data_ready'] = False
+        st.session_state['df'] = pd.DataFrame()
+        st.session_state['company_info'] = {}
+        st.session_state['selected_period_key'] = '1 日 (中長線)'
+        st.session_state['currency_symbol'] = '$'
+        
     main()
