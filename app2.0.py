@@ -193,7 +193,7 @@ def get_currency_symbol(symbol):
 # 核心修正：技術指標計算 - 採用進階設定 (10, 50, 200 EMA & 9期 RSI/MACD/ATR/ADX)
 def calculate_technical_indicators(df):
     
-    # 策略固定參數 (MA/RSI/MACD 週期) - 雖然被指出有 Overfitting 風險，但作為用戶定義策略保留 [cite: 8]
+    # 策略固定參數 (MA/RSI/MACD 週期) - 雖然被指出有 Overfitting 風險，但作為用戶定義策略保留
     df['EMA_10'] = ta.trend.ema_indicator(df['Close'], window=10) # 短線趨勢
     df['EMA_50'] = ta.trend.ema_indicator(df['Close'], window=50) # 長線趨勢
     df['EMA_200'] = ta.trend.ema_indicator(df['Close'], window=200) # 趨勢濾鏡 (MTA 長期錨點)
@@ -413,7 +413,7 @@ def run_backtest(df, initial_capital=100000, commission_rate=0.001):
 def calculate_fundamental_rating(symbol):
     """
     修正：將基本面判斷標準轉為計分模型，模擬 Meta-Learner 的輸入，
-    並將 ROE>15%、PE<15、現金流/負債健康度作為得分標準，而非絕對過濾器 [cite: 7]。
+    並將 ROE>15%、PE<15、現金流/負債健康度作為得分標準，而非絕對過濾器。
     """
     MAX_FA_SCORE = 10.0
     try:
@@ -437,7 +437,7 @@ def calculate_fundamental_rating(symbol):
         details = {}
         
         # 1. 成長與效率評分 (ROE - 權重 4/10)
-        # ROE > 15% 為優秀標準 [cite: 7]
+        # ROE > 15% 為優秀標準
         if roe >= 0.15: 
             roe_score = 4.0
             details["ROE_Score"] = "優異 (ROE ≥ 15%)"
@@ -450,7 +450,7 @@ def calculate_fundamental_rating(symbol):
         fa_score += roe_score
         
         # 2. 估值評分 (PE - 權重 3/10)
-        # PE < 15 為低估，但考慮行業失真，25 以下為合理區間 [cite: 7]
+        # PE < 15 為低估，但考慮行業失真，25 以下為合理區間
         if trailingPE > 0 and trailingPE <= 15: 
             pe_score = 3.0
             details["PE_Score"] = "低估 (P/E ≤ 15)"
@@ -510,7 +510,7 @@ def calculate_fundamental_rating(symbol):
 def generate_expert_fusion_signal(df, fa_result, currency_symbol="$"):
     """
     重構：模擬 Meta-Learner 決策層，通過量化和權重集成六大因子，
-    並實施 EMA 200 趨勢濾鏡和 ATR 動態風險控制 [cite: 6, 9, 10, 20]。
+    並實施 EMA 200 趨勢濾鏡和 ATR 動態風險控制。
     """
     
     df_clean = df.dropna().copy()
@@ -606,7 +606,7 @@ def generate_expert_fusion_signal(df, fa_result, currency_symbol="$"):
     fusion_score = sum(factor_scores.values()) 
     
     # **🔥 EMA 200 長期趨勢濾鏡 (MTA 錨點) **
-    # 只有當長期趨勢支持時，才強化短線信號 [cite: 12, 20]
+    # 只有當長期趨勢支持時，才強化短線信號
     is_long_trend_up = current_price > ema_200 and ema_50 > ema_200
     is_long_trend_down = current_price < ema_200 and ema_50 < ema_200
     
@@ -642,7 +642,7 @@ def generate_expert_fusion_signal(df, fa_result, currency_symbol="$"):
 
     if action.startswith("買進") or action.startswith("強烈買進"):
         entry = current_price # 直接按當前價位進場，但策略建議會給出緩衝區間
-        stop_loss = entry - (atr_value * risk_multiple) # ATR 動態止損 [cite: 8, 21]
+        stop_loss = entry - (atr_value * risk_multiple) # ATR 動態止損
         take_profit = entry + (atr_value * risk_multiple * reward_multiple)
         strategy_desc = f"基於{action}信號，建議進場價格區間 {currency_symbol}{entry - entry_buffer:.2f} ~ {currency_symbol}{entry + entry_buffer:.2f}，止損嚴格按 ATR 單位執行。"
     elif action.startswith("賣出") or action.startswith("強烈賣出"):
@@ -956,7 +956,7 @@ def main():
         
         st.markdown("---")
         
-        # 🔥 XAI - 因子得分分解 (Factor Decomposition) [cite: 16]
+        # 🔥 XAI - 因子得分分解 (Factor Decomposition)
         st.subheader("🔎 AI決策可解釋性：多因子得分分解 (XAI)")
         
         # 準備因子分解表格
@@ -1018,7 +1018,7 @@ def main():
         with col_strat_4:
             st.markdown(f"**🛑 止損價 (SL):** <span style='color:green;'>**{currency_symbol}{analysis['stop_loss']:.2f}**</span>", unsafe_allow_html=True)
             
-        st.info(f"**💡 策略總結:** **{analysis['strategy']}** | **⚖️ 風險/回報比 (R:R):** **{risk_reward:.2f}** (目標 2:1) | **波動單位 (ATR):** {analysis.get('atr', 0):.4f}。**止損點為動態 ATR 止損 [cite: 8, 21]。**")
+        st.info(f"**💡 策略總結:** **{analysis['strategy']}** | **⚖️ 風險/回報比 (R:R):** **{risk_reward:.2f}** (目標 2:1) | **波動單位 (ATR):** {analysis.get('atr', 0):.4f}。**止損點為動態 ATR 止損。**")
         
         st.markdown("---")
         
@@ -1061,7 +1061,7 @@ def main():
                 )
                 st.plotly_chart(fig_bt, use_container_width=True)
                 
-            st.caption("ℹ️ **策略說明:** 此回測作為策略**魯棒性 (Robustness)** 的基礎驗證 [cite: 5]，顯示了**最大回撤 (MDD)** 和總回報率。實盤策略應追求高夏普比率和低 MDD。")
+            st.caption("ℹ️ **策略說明:** 此回測作為策略**魯棒性 (Robustness)** 的基礎驗證，顯示了**最大回撤 (MDD)** 和總回報率。實盤策略應追求高夏普比率和低 MDD。")
         else:
             st.info(f"回測無法執行或無交易信號：{backtest_results.get('message', '數據不足或發生錯誤。')}")
 
@@ -1105,23 +1105,28 @@ def main():
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
 
-    # === 修正部分：未分析時的預設首頁顯示 ===
+    # === 修正部分：未分析時的預設首頁顯示 (依照您的需求進行了修改) ===
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
           st.markdown(
               """
-              <h1 style='color: #cc6600; font-size: 32px; font-weight: bold;'>🚀 歡迎使用 AI 集成趨勢分析</h1>
+              <h1 style='color: #cc6600; font-size: 32px; font-weight: bold;'>🚀 歡迎使用 AI 趨勢分析</h1>
               """, 
               unsafe_allow_html=True
           )
           
-          st.info("請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 **『📊 執行AI分析』** 按鈕開始。")
+          st.info(f"請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』</span> 按鈕開始。", unsafe_allow_html=True)
           
           st.markdown("---")
           
-          st.subheader("📝 核心架構升級：")
-          st.markdown("* **集成決策 (Ensemble)**：決策層已由單純的指標疊加升級為多因子量化集成模型 (Meta-Learner)，以提升穩定性 [cite: 6, 9, 11]。")
-          st.markdown("* **動態風控 (ATR)**：止損機制已從固定百分比升級為基於 **ATR** 的動態風險控制 [cite: 8, 21]。")
-          st.markdown("* **可解釋性 AI (XAI)**：新增了 **因子分解報告**，將 AI 決策從「黑盒」轉為「白盒」，增強透明度 。")
+          st.subheader("📝 使用步驟：")
+          st.markdown("1. **選擇資產類別**：在左側欄選擇 `美股`、`台股` 或 `加密貨幣`。")
+          st.markdown("2. **選擇標的**：使用下拉選單快速選擇熱門標的，或直接在輸入框中鍵入代碼或名稱。")
+          st.markdown("3. **選擇週期**：決定分析的長度（例如：`30 分 (短期)`、`1 日 (中長線)`）。")
+          st.markdown(f"4. **執行分析**：點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
+          
+          st.markdown("---")
+          st.markdown("⚠️ **免責聲明:** 本分析模型包含多位AI的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
+          st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
 
 
 if __name__ == '__main__':
@@ -1138,5 +1143,6 @@ if __name__ == '__main__':
     main()
     
     st.markdown("---")
-    st.markdown("⚠️ **免責聲明 (風險揭示強化):** 本分析模型是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構 [cite: 21]。但其性能仍受限於固定參數的**過度擬合風險** [cite: 8] 和市場的固有不穩定性。分析結果**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問 [cite: 1, 17]。")
+    # 底部免責聲明保持簡潔，與上方保持一致
+    st.markdown("⚠️ **免責聲明 (風險揭示強化):** 本分析模型是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構。但其性能仍受限於固定參數的**過度擬合風險** 和市場的固有不穩定性。分析結果**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
     st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
