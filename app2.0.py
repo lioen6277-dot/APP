@@ -881,15 +881,12 @@ def main():
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
 
-    # === 修正部分：未分析時的預設首頁顯示 ===
+    # === 修正部分：未分析時的預設首頁顯示 (已修正為內聯 CSS) ===
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
-          # 使用 HTML 語法來控制顏色 (橙色調：#cc6600)
+          # 使用 HTML 語法來控制顏色 (橙色調：#cc6600)，改用內聯 CSS 確保生效
           st.markdown(
               """
-              <style>
-              .orange-header { color: #cc6600; font-size: 32px; font-weight: bold; }
-              </style>
-              <h1 class='orange-header'>🚀 歡迎使用 AI 趨勢分析</h1>
+              <h1 style='color: #cc6600; font-size: 32px; font-weight: bold;'>🚀 歡迎使用 AI 趨勢分析</h1>
               """, 
               unsafe_allow_html=True
           )
