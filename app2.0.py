@@ -735,11 +735,11 @@ def main():
     # === 新增自定義 CSS 來實現玻璃按鍵效果和橙色文字 ===
     st.markdown("""
         <style>
-        /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (將顏色改為 #ff9933) */
+        /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (淡橙色：#ffab40) */
         [data-testid="stSidebar"] .stButton button {
-            color: #ff9933 !important; /* 🔥 亮橙色文字 (使用者要求) */
+            color: #ffab40 !important; /* 淡橙色文字 */
             background-color: rgba(255, 255, 255, 0.1) !important; /* 透明背景 */
-            border-color: #ff9933 !important; /* 🔥 亮橙色邊框 (與文字同色) */
+            border-color: #ffab40 !important; /* 淡橙色邊框 */
             border-width: 1px !important;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
             border-radius: 8px;
@@ -748,7 +748,7 @@ def main():
         /* 2. 懸停 (Hover) 效果 */
         [data-testid="stSidebar"] .stButton button:hover {
             color: #cc6600 !important; 
-            background-color: rgba(255, 153, 51, 0.15) !important; /* 懸停背景色微調 */
+            background-color: rgba(255, 171, 64, 0.15) !important; 
             border-color: #cc6600 !important;
             box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); 
         }
@@ -756,7 +756,7 @@ def main():
         [data-testid="stSidebar"] .stButton button:active,
         [data-testid="stSidebar"] .stButton button:focus {
             color: #ff9933 !important;
-            background-color: rgba(255, 153, 51, 0.25) !important;
+            background-color: rgba(255, 171, 64, 0.25) !important;
             border-color: #ff9933 !important;
             box-shadow: none !important; 
         }
@@ -854,7 +854,7 @@ def main():
     # --- 5. 開始分析 (Button) ---
     st.sidebar.markdown("5. **開始分析**")
     
-    # 修正：按鈕文字顏色透過 CSS 控制 (已在上方 CSS 中調整為 #ff9933)
+    # 修正：按鈕文字顏色透過 CSS 控制
     analyze_button_clicked = st.sidebar.button("📊 執行AI分析", key="main_analyze_button") 
 
     # === 主要分析邏輯 (Main Analysis Logic) ===
@@ -1117,8 +1117,8 @@ def main():
               unsafe_allow_html=True
           )
           
-          # 🔥 修正：將顏色改為 #ff9933
-          st.markdown(f"請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 <span style='color: #ff9933; font-weight: bold;'>『📊 執行AI分析』</span> 按鈕開始。", unsafe_allow_html=True)
+          # 修正：將 st.info 替換為 st.markdown (支援 HTML 顏色)
+          st.markdown(f"請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』</span> 按鈕開始。", unsafe_allow_html=True)
           
           st.markdown("---")
           
@@ -1126,8 +1126,7 @@ def main():
           st.markdown("1. **選擇資產類別**：在左側欄選擇 `美股`、`台股` 或 `加密貨幣`。")
           st.markdown("2. **選擇標的**：使用下拉選單快速選擇熱門標的，或直接在輸入框中鍵入代碼或名稱。")
           st.markdown("3. **選擇週期**：決定分析的長度（例如：`30 分 (短期)`、`1 日 (中長線)`）。")
-          # 🔥 修正：將顏色改為 #ff9933
-          st.markdown(f"4. **執行分析**：點擊 <span style='color: #ff9933; font-weight: bold;'>『📊 執行AI分析』**</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
+          st.markdown(f"4. **執行分析**：點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』**</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
           
           st.markdown("---")
 
