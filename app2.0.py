@@ -187,13 +187,12 @@ def get_currency_symbol(symbol):
     elif currency_code == 'HKD': return 'HK$'
     else: return currency_code + ' '
 
-# 核心修正：技術指標計算 - 採用進階設定 (10, 50, 200 EMA & 9期 RSI/MACD/ATR/ADX)
+# 核心修正：技術指標計算
 def calculate_technical_indicators(df):
     
-    # 策略固定參數 (MA/RSI/MACD 週期) - 雖然被指出有 Overfitting 風險，但作為用戶定義策略保留
     df['EMA_10'] = ta.trend.ema_indicator(df['Close'], window=10) # 短線趨勢
     df['EMA_50'] = ta.trend.ema_indicator(df['Close'], window=50) # 長線趨勢
-    df['EMA_200'] = ta.trend.ema_indicator(df['Close'], window=200) # 趨勢濾鏡 (MTA 長期錨點)
+    df['EMA_200'] = ta.trend.ema_indicator(df['Close'], window=200) # 趨勢濾鏡
     
     # MACD (進階設定: 快線 8, 慢線 17, 信號線 9)
     macd_instance = ta.trend.MACD(df['Close'], window_fast=8, window_slow=17, window_sign=9)
@@ -208,10 +207,10 @@ def calculate_technical_indicators(df):
     df['BB_High'] = ta.volatility.bollinger_hband(df['Close'], window=20, window_dev=2)
     df['BB_Low'] = ta.volatility.bollinger_lband(df['Close'], window=20, window_dev=2)
     
-    # ATR (進階設定: 週期 9) - 風險控制的基石 (Dynamic Risk Management)
+    # ATR (進階設定: 週期 9) 
     df['ATR'] = ta.volatility.average_true_range(df['High'], df['Low'], df['Close'], window=9)
     
-    # ADX (進階設定: 週期 9) - 趨勢強度的濾鏡
+    # ADX (進階設定: 週期 9) 
     df['ADX'] = ta.trend.adx(df['High'], df['Low'], df['Close'], window=9)
     
     # 增加 SMA 20 (用於回測基準)
@@ -219,10 +218,9 @@ def calculate_technical_indicators(df):
     
     return df
 
-# get_technical_data_df (維持不變 - 技術指標表格與判讀)
+# get_technical_data_df
 def get_technical_data_df(df):
     """獲取最新的技術指標數據和AI結論，並根據您的進階原則進行判讀。"""
-    # 保持判讀函數不變，讓它作為對單一指標的解釋
     
     if df.empty or len(df) < 200: return pd.DataFrame()
 
@@ -262,7 +260,6 @@ def get_technical_data_df(df):
                 conclusion, color = "中性：MA 糾結或趨勢發展中", "blue"
         
         elif 'RSI' in name:
-            # 進階判斷: RSI > 50 多頭, < 50 空頭。70/30 為超買超賣
             if value > 70:
                 conclusion, color = "警告：超買區域 (70)，潛在回調", "green" 
             elif value < 30:
@@ -274,7 +271,6 @@ def get_technical_data_df(df):
 
 
         elif 'MACD' in name:
-            # 判斷 MACD 柱狀圖是否放大
             if value > 0 and value > prev_row['MACD']:
                 conclusion, color = "強化：多頭動能增強 (紅柱放大)", "red"
             elif value < 0 and value < prev_row['MACD']:
@@ -318,7 +314,7 @@ def get_technical_data_df(df):
     technical_df = technical_df.set_index('指標名稱')
     return technical_df
 
-# run_backtest (保留並確認其為量化分析的重要組成部分)
+# run_backtest (保留)
 def run_backtest(df, initial_capital=100000, commission_rate=0.001):
     """
     執行基於 SMA 20 / EMA 50 交叉的簡單回測。
@@ -406,11 +402,10 @@ def run_backtest(df, initial_capital=100000, commission_rate=0.001):
         "capital_curve": capital_series
     }
 
-# calculate_fundamental_rating (修正：轉為計分模型，模擬相對對標)
+# calculate_fundamental_rating (保留)
 def calculate_fundamental_rating(symbol):
     """
-    修正：將基本面判斷標準轉為計分模型，模擬 Meta-Learner 的輸入，
-    並將 ROE>15%、PE<15、現金流/負債健康度作為得分標準，而非絕對過濾器。
+    將基本面判斷標準轉為計分模型，模擬 Meta-Learner 的輸入。
     """
     MAX_FA_SCORE = 10.0
     try:
@@ -434,7 +429,6 @@ def calculate_fundamental_rating(symbol):
         details = {}
         
         # 1. 成長與效率評分 (ROE - 權重 4/10)
-        # ROE > 15% 為優秀標準
         if roe >= 0.15: 
             roe_score = 4.0
             details["ROE_Score"] = "優異 (ROE ≥ 15%)"
@@ -442,12 +436,11 @@ def calculate_fundamental_rating(symbol):
             roe_score = 3.0
             details["ROE_Score"] = "良好 (10% ≤ ROE < 15%)"
         else:
-            roe_score = max(0, roe * 10) # 0.0 ~ 1.0 
+            roe_score = max(0, roe * 10) 
             details["ROE_Score"] = "偏弱"
         fa_score += roe_score
         
         # 2. 估值評分 (PE - 權重 3/10)
-        # PE < 15 為低估，但考慮行業失真，25 以下為合理區間
         if trailingPE > 0 and trailingPE <= 15: 
             pe_score = 3.0
             details["PE_Score"] = "低估 (P/E ≤ 15)"
@@ -465,7 +458,6 @@ def calculate_fundamental_rating(symbol):
         # 3. 現金流與償債能力 (CF/Debt - 權重 3/10)
         cash_debt_ratio = (totalCash / totalDebt) if totalDebt and totalDebt != 0 else 100 
         
-        # FCF > 0 且 現金/債務 > 2 視為健康
         if freeCashFlow > 0 and cash_debt_ratio >= 2: 
             cf_score = 3.0
             details["CF_Score"] = "極健康 (FCF > 0, Cash/Debt ≥ 2)"
@@ -503,10 +495,10 @@ def calculate_fundamental_rating(symbol):
             "Max_Score": MAX_FA_SCORE 
         }
 
-# generate_expert_fusion_signal (重構：實作 Meta-Learner 集成與 ATR 動態風險控制)
+# generate_expert_fusion_signal (保留)
 def generate_expert_fusion_signal(df, fa_result, currency_symbol="$"):
     """
-    重構：模擬 Meta-Learner 決策層，通過量化和權重集成六大因子，
+    模擬 Meta-Learner 決策層，通過量化和權重集成六大因子，
     並實施 EMA 200 趨勢濾鏡和 ATR 動態風險控制。
     """
     
@@ -531,7 +523,7 @@ def generate_expert_fusion_signal(df, fa_result, currency_symbol="$"):
     }
     
     # ----------------------------------------------------
-    # 1. 技術因子評分 (基學習器 Base Learners)
+    # 1. 技術因子評分 
     # ----------------------------------------------------
     ema_10 = last_row['EMA_10']
     ema_50 = last_row['EMA_50']
@@ -592,7 +584,6 @@ def generate_expert_fusion_signal(df, fa_result, currency_symbol="$"):
     
     # 歸一化 FA Score 至 -5.0 ~ +5.0
     if fa_max_score > 0:
-        # (Score / Max Score) * 10 - 5.0
         factor_scores['基本面_FA'] = (fa_rating / fa_max_score) * 10.0 - 5.0
         
     # ----------------------------------------------------
@@ -603,19 +594,14 @@ def generate_expert_fusion_signal(df, fa_result, currency_symbol="$"):
     fusion_score = sum(factor_scores.values()) 
     
     # **🔥 EMA 200 長期趨勢濾鏡 (MTA 錨點) **
-    # 只有當長期趨勢支持時，才強化短線信號
     is_long_trend_up = current_price > ema_200 and ema_50 > ema_200
     is_long_trend_down = current_price < ema_200 and ema_50 < ema_200
     
     if is_long_trend_up:
-        # 長期趨勢向上，強化所有多頭信號 (Meta-Learner 權重調整)
         if fusion_score > 0: fusion_score *= 1.5
-        # 長期趨勢向上，弱化空頭信號 (防止在牛市中做空)
         elif fusion_score < 0: fusion_score *= 0.5 
     elif is_long_trend_down:
-        # 長期趨勢向下，強化所有空頭信號 
         if fusion_score < 0: fusion_score *= 1.5
-        # 長期趨勢向下，弱化多頭信號 (防止在熊市中抄底)
         elif fusion_score > 0: fusion_score *= 0.5
         
     # 最終行動
@@ -626,20 +612,20 @@ def generate_expert_fusion_signal(df, fa_result, currency_symbol="$"):
     elif fusion_score <= -4.0: action = "賣出/清倉 (Sell/Clear)"
         
     # 信心指數
-    MAX_SCORE = 20.0 # 假設最大總分約 20 (經濾鏡放大後)
+    MAX_SCORE = 20.0 
     confidence = min(100, max(0, 50 + (fusion_score / MAX_SCORE) * 50))
     
     # ----------------------------------------------------
-    # 4. ATR 動態風險控制與交易策略 (R:R 2:1 的原則)
+    # 4. ATR 動態風險控制與交易策略 
     # ----------------------------------------------------
-    risk_multiple = 2.5 # 使用 2.5 ATR 作為風險單位 (專業量化標準)
-    reward_multiple = 2.0 # 追求 2:1 的回報風險比
+    risk_multiple = 2.5 
+    reward_multiple = 2.0 
     
-    entry_buffer = atr_value * 0.2 # 允許 0.2 ATR 的緩衝/滑點
+    entry_buffer = atr_value * 0.2 
 
     if action.startswith("買進") or action.startswith("強烈買進"):
-        entry = current_price # 直接按當前價位進場，但策略建議會給出緩衝區間
-        stop_loss = entry - (atr_value * risk_multiple) # ATR 動態止損
+        entry = current_price 
+        stop_loss = entry - (atr_value * risk_multiple) 
         take_profit = entry + (atr_value * risk_multiple * reward_multiple)
         strategy_desc = f"基於{action}信號，建議進場價格區間 {currency_symbol}{entry - entry_buffer:.2f} ~ {currency_symbol}{entry + entry_buffer:.2f}，止損嚴格按 ATR 單位執行。"
     elif action.startswith("賣出") or action.startswith("強烈賣出"):
@@ -662,11 +648,11 @@ def generate_expert_fusion_signal(df, fa_result, currency_symbol="$"):
         'take_profit': take_profit,
         'stop_loss': stop_loss,
         'current_price': current_price,
-        'factor_scores': factor_scores, # **新增 XAI 因子分數**
+        'factor_scores': factor_scores, 
         'atr': atr_value
     }
 
-# create_comprehensive_chart (維持不變 - 綜合圖表繪製)
+# create_comprehensive_chart 
 def create_comprehensive_chart(df, symbol, period_key):
     df_clean = df.dropna().copy()
     if df_clean.empty: return go.Figure().update_layout(title="數據不足，無法繪製圖表")
@@ -678,23 +664,24 @@ def create_comprehensive_chart(df, symbol, period_key):
                         subplot_titles=(f"{symbol} 價格走勢 (週期: {period_key})", "MACD 指標", "RSI/ADX 指標"))
 
     # 1. 主圖：K線與均線 (EMA 10, 50, 200)
-    fig.add_trace(go.Candlestick(x=df_clean.index, open=df_clean['Open'], high=df_clean['High'], low=df_clean['Low'], close=df_clean['Close'], name='K線', increasing_line_color='#cc0000', decreasing_line_color='#1e8449'), row=1, col=1)
+    # 修正：K線多頭顏色統一為淡橙色 cc6600
+    fig.add_trace(go.Candlestick(x=df_clean.index, open=df_clean['Open'], high=df_clean['High'], low=df_clean['Low'], close=df_clean['Close'], name='K線', increasing_line_color='#cc6600', decreasing_line_color='#1e8449'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df_clean.index, y=df_clean['EMA_10'], line=dict(color='#ffab40', width=1), name='EMA 10'), row=1, col=1) 
     fig.add_trace(go.Scatter(x=df_clean.index, y=df_clean['EMA_50'], line=dict(color='#0077b6', width=1.5), name='EMA 50'), row=1, col=1) 
     fig.add_trace(go.Scatter(x=df_clean.index, y=df_clean['EMA_200'], line=dict(color='#800080', width=1.5, dash='dash'), name='EMA 200'), row=1, col=1) 
     
-    # 2. MACD 圖 (MACD Line 和 Signal Line)
-    colors = np.where(df_clean['MACD'] > 0, '#cc0000', '#1e8449') 
+    # 2. MACD 圖 
+    colors = np.where(df_clean['MACD'] > 0, '#cc6600', '#1e8449') # 修正：MACD 多頭顏色統一為淡橙色 cc6600
     fig.add_trace(go.Bar(x=df_clean.index, y=df_clean['MACD'], name='MACD 柱狀圖', marker_color=colors, opacity=0.5), row=2, col=1)
     fig.add_trace(go.Scatter(x=df_clean.index, y=df_clean['MACD_Line'], line=dict(color='#0077b6', width=1), name='DIF'), row=2, col=1)
     fig.add_trace(go.Scatter(x=df_clean.index, y=df_clean['MACD_Signal'], line=dict(color='#ffab40', width=1), name='DEA'), row=2, col=1)
     fig.update_yaxes(title_text="MACD", row=2, col=1)
 
     # 3. RSI 圖 (包含 ADX)
-    fig.add_trace(go.Scatter(x=df_clean.index, y=df_clean['RSI'], line=dict(color='purple', width=1.5), name='RSI'), row=3, col=1)
-    fig.add_hline(y=70, line_dash="dash", line_color="red", row=3, col=1, annotation_text="超買 (70)", annotation_position="top right")
+    fig.add_trace(go.Scatter(x=df_clean.index, y=df_clean['RSI'], line=dict(color='#ffab40', width=1.5), name='RSI'), row=3, col=1) # 修正：RSI 線條顏色為淡橙色
+    fig.add_hline(y=70, line_dash="dash", line_color="#cc6600", row=3, col=1, annotation_text="超買 (70)", annotation_position="top right") # 修正：超買線顏色為淡橙色
     fig.add_hline(y=50, line_dash="dash", line_color="grey", row=3, col=1, annotation_text="多/空分界 (50)", annotation_position="top left")
-    fig.add_hline(y=30, line_dash="dash", line_color="green", row=3, col=1, annotation_text="超賣 (30)", annotation_position="bottom right")
+    fig.add_hline(y=30, line_dash="dash", line_color="#1e8449", row=3, col=1, annotation_text="超賣 (30)", annotation_position="bottom right")
     fig.update_yaxes(title_text="RSI", range=[0, 100], row=3, col=1)
     
     # ADX - 使用第二個 Y 軸 (右側)
@@ -728,7 +715,7 @@ def update_search_input():
 
 def main():
     
-    # === 新增自定義 CSS 來實現透明按鍵和淡橙色文字 (玻璃按鍵效果) ===
+    # === 新增自定義 CSS 來實現玻璃按鍵效果和橙色文字 ===
     st.markdown("""
         <style>
         /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (淡橙色：#ffab40) */
@@ -761,9 +748,13 @@ def main():
         
         /* 5. 因子分解表格標題顏色 (XAI/Transparency) */
         .factor-score-table th { background-color: rgba(204, 102, 0, 0.3) !important; }
-        .factor-score-positive { color: #cc0000; font-weight: bold; }
+        /* 修正：統一多頭信號顏色 */
+        .factor-score-positive { color: #cc6600; font-weight: bold; } 
+        .action-buy { color: #cc6600; font-weight: bold; }
+        .action-sell { color: #1e8449; font-weight: bold; }
+        .action-neutral { color: #0077b6; font-weight: bold; } /* 中性改為藍色 */
         .factor-score-negative { color: #1e8449; font-weight: bold; }
-        .factor-score-neutral { color: #cc6600; }
+        .factor-score-neutral { color: #0077b6; }
         </style>
         """, unsafe_allow_html=True)
 
@@ -775,7 +766,7 @@ def main():
     selected_category_key = st.sidebar.selectbox(
         "選擇資產類別", 
         category_keys, 
-        index=category_keys.index("台股 (TW) - 個股/ETF/指數"), # 預設選中台股
+        index=category_keys.index("台股 (TW) - 個股/ETF/指數"), 
         label_visibility="collapsed"
     )
 
@@ -846,6 +837,7 @@ def main():
     # --- 5. 開始分析 (Button) ---
     st.sidebar.markdown("5. **開始分析**")
     
+    # 修正：按鈕文字顏色透過 CSS 控制
     analyze_button_clicked = st.sidebar.button("📊 執行AI分析", key="main_analyze_button") 
 
     # === 主要分析邏輯 (Main Analysis Logic) ===
@@ -929,9 +921,9 @@ def main():
             [data-testid="stMetricValue"] { font-size: 20px; }
             [data-testid="stMetricLabel"] { font-size: 13px; }
             [data-testid="stMetricDelta"] { font-size: 12px; }
-            .action-buy { color: #cc0000; font-weight: bold; }
+            .action-buy { color: #cc6600; font-weight: bold; } /* 統一為淡橙色 */
             .action-sell { color: #1e8449; font-weight: bold; }
-            .action-neutral { color: #cc6600; font-weight: bold; }
+            .action-neutral { color: #0077b6; font-weight: bold; }
             </style>
             """, unsafe_allow_html=True
         )
@@ -975,9 +967,10 @@ def main():
             is_negative = s['得分 (-5.0 ~ +5.0)'] < -1.0
             is_neutral = (s['得分 (-5.0 ~ +5.0)'] >= -1.0) & (s['得分 (-5.0 ~ +5.0)'] <= 1.0)
             
+            # 修正：統一多頭信號顏色
             colors = np.select(
                 [is_positive, is_negative, is_neutral],
-                ['color: #cc0000; font-weight: bold;', 'color: #1e8449; font-weight: bold;', 'color: #cc6600;'],
+                ['color: #cc6600; font-weight: bold;', 'color: #1e8449; font-weight: bold;', 'color: #0077b6;'],
                 default='color: #888888;'
             )
             return [f'{c}' for c in colors]
@@ -1009,12 +1002,13 @@ def main():
         with col_strat_1:
             st.markdown(f"**建議操作:** <span class='{action_class}' style='font-size: 18px;'>**{analysis['action']}**</span>", unsafe_allow_html=True)
         with col_strat_2:
-            st.markdown(f"**建議進場價:** <span style='color:#cc6600;'>**{currency_symbol}{analysis['entry_price']:.2f}**</span>", unsafe_allow_html=True)
+            st.markdown(f"**建議進場價:** <span style='color:#cc6600;'>**{currency_symbol}{analysis['entry_price']:.2f}**</span>", unsafe_allow_html=True) # 修正：進場價顏色
         with col_strat_3:
-            st.markdown(f"**🚀 止盈價 (TP):** <span style='color:red;'>**{currency_symbol}{analysis['take_profit']:.2f}**</span>", unsafe_allow_html=True)
+            st.markdown(f"**🚀 止盈價 (TP):** <span style='color:#cc6600;'>**{currency_symbol}{analysis['take_profit']:.2f}**</span>", unsafe_allow_html=True) # 修正：止盈價顏色
         with col_strat_4:
-            st.markdown(f"**🛑 止損價 (SL):** <span style='color:green;'>**{currency_symbol}{analysis['stop_loss']:.2f}**</span>", unsafe_allow_html=True)
-            
+            st.markdown(f"**🛑 止損價 (SL):** <span style='color:#1e8449;'>**{currency_symbol}{analysis['stop_loss']:.2f}**</span>", unsafe_allow_html=True) # 修正：止損價顏色
+
+        # 修正：info Box 內容統一使用橙色強調
         st.info(f"**💡 策略總結:** **{analysis['strategy']}** | **⚖️ 風險/回報比 (R:R):** **{risk_reward:.2f}** (目標 2:1) | **波動單位 (ATR):** {analysis.get('atr', 0):.4f}。**止損點為動態 ATR 止損。**")
         
         st.markdown("---")
@@ -1046,7 +1040,7 @@ def main():
             # 資金曲線圖
             if 'capital_curve' in backtest_results:
                 fig_bt = go.Figure()
-                fig_bt.add_trace(go.Scatter(x=df.index.to_list(), y=backtest_results['capital_curve'], name='策略資金曲線', line=dict(color='#cc6600', width=2)))
+                fig_bt.add_trace(go.Scatter(x=df.index.to_list(), y=backtest_results['capital_curve'], name='策略資金曲線', line=dict(color='#cc6600', width=2))) # 修正：資金曲線顏色
                 fig_bt.add_hline(y=100000, line_dash="dash", line_color="#1e8449", annotation_text="起始資金 $100,000", annotation_position="bottom right")
                 
                 fig_bt.update_layout(
@@ -1071,10 +1065,11 @@ def main():
         if not technical_df.empty:
             def style_indicator(s):
                 df_color = technical_df['顏色']
-                color_map = {'red': 'color: #cc0000; font-weight: bold;', 
+                # 修正：將紅色替換為橙色（多頭/強化信號）
+                color_map = {'red': 'color: #cc6600; font-weight: bold;', 
                              'green': 'color: #1e8449; font-weight: bold;', 
-                             'orange': 'color: #cc6600;',
-                             'blue': 'color: #004d99;',
+                             'orange': 'color: #0077b6;', # 中性改為藍色
+                             'blue': 'color: #888888;', # 中性改為灰色
                              'grey': 'color: #888888;'}
                 
                 return [color_map.get(df_color.loc[index], '') for index in s.index]
@@ -1102,7 +1097,7 @@ def main():
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
 
-    # === 修正部分：未分析時的預設首頁顯示 (已將 st.info 替換為 st.markdown) ===
+    # === 修正部分：未分析時的預設首頁顯示 ===
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
           st.markdown(
               """
@@ -1111,7 +1106,7 @@ def main():
               unsafe_allow_html=True
           )
           
-          # 修正: 將 st.info 替換為 st.markdown 以支援 HTML
+          # 修正：將 st.info 替換為 st.markdown (支援 HTML 顏色)
           st.markdown(f"請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』</span> 按鈕開始。", unsafe_allow_html=True)
           
           st.markdown("---")
@@ -1140,7 +1135,8 @@ if __name__ == '__main__':
         
     main()
     
+    # 刪除重複的免責聲明，只保留 main() 函數內部未分析時的免責聲明。
+    # 如果 main() 函數執行完畢後沒有分析結果，會顯示內部的免責聲明。
+    # 這裡只保留強化風險揭示，作為頁面最底部的獨立資訊。
     st.markdown("---")
-    # 底部免責聲明保持簡潔，與上方保持一致
-    st.markdown("⚠️ **免責聲明 (風險揭示強化):** 本分析模型是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構。但其性能仍受限於固定參數的**過度擬合風險** 和市場的固有不穩定性。分析結果**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
-    st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
+    st.markdown("⚠️ **風險揭示強化:** 本分析模型是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構。但其性能仍受限於固定參數的**過度擬合風險** 和市場的固有不穩定性。所有分析結果**僅供參考**。")
