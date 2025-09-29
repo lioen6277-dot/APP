@@ -624,7 +624,7 @@ def create_comprehensive_chart(df, symbol_name, period_key):
     fig.update_yaxes(title_text="價格 / 均線", row=1, col=1)
     fig.update_yaxes(title_text="MACD", row=2, col=1)
     fig.update_yaxes(title_text="RSI", row=3, col=1, range=[0, 100]) # 鎖定 RSI 範圍
-    fig.update_yaxes(title_text="%K", row=4, col=1, range=[0, 100]) # 鎖定 %K 範圍
+    fig.update_yaxes(title_text="Stoch", row=4, col=1, range=[0, 100]) # 鎖定 %K 範圍
     
     # 移除子圖間的 X 軸刻度，除了最後一個
     fig.update_xaxes(showticklabels=False, row=1, col=1)
@@ -759,20 +759,36 @@ def main():
         # 價格資訊 (最後一行數據)
         if not df.empty:
             last_price = df['Close'].iloc[-1]
-            prev_price = df['Close'].iloc[-2] if len(df) >= 2 else last_price
+            # 確保有足夠的數據行
+            prev_price = df['Close'].iloc[-2] if len(df) >= 2 else last_price 
             change_amount = last_price - prev_price
-            change_percent = (change_amount / prev_price) * 100 if prev_price else 0
             
+            # 計算百分比，避免除以零
+            if prev_price != 0:
+                change_percent = (change_amount / prev_price) * 100
+            else:
+                change_percent = 0
+            
+            # --- StreamlitAPIException 修正點 ---
+            # Streamlit st.metric delta_color 只能是 'normal', 'inverse', 'off'
+            
+            # 決定 delta_color 參數
+            if company_info['category'] == "台股 (TW)":
+                # 台股: 紅漲綠跌 -> 'inverse' (正數顯示紅色)
+                color_setting = "inverse"
+            else:
+                # 美股/加密貨幣: 綠漲紅跌 -> 'normal' (正數顯示綠色)
+                color_setting = "normal"
+            
+            # 處理 delta 字串
             if change_amount > 0:
-                color = "green" if company_info['category'] == "美股 (US)" or company_info['category'] == "加密貨幣 (Crypto)" else "red"
                 delta_str = f"▲ {change_amount:,.2f} ({change_percent:+.2f}%)"
             elif change_amount < 0:
-                color = "red" if company_info['category'] == "美股 (US)" or company_info['category'] == "加密貨幣 (Crypto)" else "green"
                 delta_str = f"▼ {change_amount:,.2f} ({change_percent:+.2f}%)"
             else:
-                color = "gray"
                 delta_str = f"± 0.00 (0.00%)"
-                
+                color_setting = "off" # 無變化時關閉顏色
+            
             # 標題
             with col1:
                 st.subheader(f"{company_info['name']} ({final_symbol_to_analyze})")
@@ -780,7 +796,7 @@ def main():
                     label=f"最新價格 ({currency_symbol})",
                     value=f"{last_price:,.2f}",
                     delta=delta_str,
-                    delta_color=color # Streamlit 的 color 設置是: Green(正), Red(負), Blue/Gray(中性)
+                    delta_color=color_setting # 修正後的參數
                 )
 
             with col2:
@@ -804,6 +820,7 @@ def main():
             
             with signal_col1:
                 # 動作信號
+                # 使用 HTML 來顯示自訂顏色 (這部分不受 st.metric 限制)
                 if "買入" in ai_signal['action']:
                     st.markdown(f"**建議動作**: <span style='font-size: 1.5em; color: #ff4b4b;'>**{ai_signal['action']}**</span>", unsafe_allow_html=True)
                 elif "賣出" in ai_signal['action']:
