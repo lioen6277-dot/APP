@@ -128,9 +128,6 @@ for category, codes in CATEGORY_MAP.items():
 # 2. 輔助函式定義
 # ==============================================================================
 
-# get_symbol_from_query, get_stock_data, get_company_info, get_currency_symbol 
-# (數據獲取與基礎資訊 - 維持不變)
-
 def get_symbol_from_query(query: str) -> str:
     """ 🎯 進化後的代碼解析函數：同時檢查 FULL_SYMBOLS_MAP """
     query = query.strip()
@@ -1105,7 +1102,7 @@ def main():
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
 
-    # === 修正部分：未分析時的預設首頁顯示 (依照您的需求進行了修改) ===
+    # === 修正部分：未分析時的預設首頁顯示 (已將 st.info 替換為 st.markdown) ===
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
           st.markdown(
               """
@@ -1114,7 +1111,8 @@ def main():
               unsafe_allow_html=True
           )
           
-          st.info(f"請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』</span> 按鈕開始。", unsafe_allow_html=True)
+          # 修正: 將 st.info 替換為 st.markdown 以支援 HTML
+          st.markdown(f"請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』</span> 按鈕開始。", unsafe_allow_html=True)
           
           st.markdown("---")
           
@@ -1125,7 +1123,7 @@ def main():
           st.markdown(f"4. **執行分析**：點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
           
           st.markdown("---")
-          st.markdown("⚠️ **免責聲明:** 本分析模型包含多位AI的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
+          st.markdown("⚠️ **免責聲明:** 本分析模型包含多位AI的量化觀點，但僅供教育與參考用途。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
           st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
 
 
