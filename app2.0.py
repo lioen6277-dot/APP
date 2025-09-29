@@ -223,7 +223,7 @@ def get_currency_symbol(symbol):
 
 def calculate_technical_indicators(df):
     """
-    優化後的技術指標計算：採用市場經典且被廣泛驗證的參數設定。
+    優化後的技術指標計算：採用市場經典且被廣泛驗證的參數設定 (最精準設定)。
     """
     
     # 經典趨勢指標
@@ -244,7 +244,7 @@ def calculate_technical_indicators(df):
     # 經典 ATR 設定 (14)
     df['ATR'] = ta.volatility.average_true_range(df['High'], df['Low'], df['Close'], window=14)
     
-    # 經典 Stochastics 設定 (%K=14, Smooth=3)
+    # 經典 Stochastics 設定 (%K=14, Smooth=3, %D=3)
     df['Stoch_K'] = ta.momentum.stoch(df['High'], df['Low'], df['Close'], window=14, smooth_window=3)
     
     return df
@@ -654,7 +654,7 @@ def main():
     # === 新增自定義 CSS 來實現透明按鍵和淡橙色文字 (玻璃按鍵效果) ===
     st.markdown("""
         <style>
-        /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 */
+        /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (淡橙色：#ffab40) */
         [data-testid="stSidebar"] .stButton button {
             color: #ffab40 !important; /* 淡橙色文字 */
             background-color: rgba(255, 255, 255, 0.1) !important; /* 透明背景 */
@@ -773,7 +773,7 @@ def main():
     # --- 5. 開始分析 (Button) ---
     st.sidebar.markdown("5. **開始分析**")
     
-    # 使用自定義 CSS 實現的玻璃按鍵
+    # 使用自定義 CSS 實現的玻璃按鍵 (淡橙色高亮)
     analyze_button_clicked = st.sidebar.button("📊 執行AI分析", key="main_analyze_button") 
 
     # === 主要分析邏輯 (Main Analysis Logic) ===
