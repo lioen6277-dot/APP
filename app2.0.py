@@ -1012,7 +1012,7 @@ def main():
         st.subheader("🛠️ 技術指標狀態表")
         technical_df = get_technical_data_df(df)
         
-          if not technical_df.empty:
+  if not technical_df.empty:
             def style_indicator(s):
                 df_color = technical_df['顏色']
                 # 修正：將紅色替換為橙色（多頭/強化信號）
@@ -1085,8 +1085,9 @@ if __name__ == '__main__':
         
     main()
     
+    # 🚨 綜合免責聲明區塊
     st.markdown("---")
-    st.markdown("⚠️ **免責聲明:** 本分析模型包含多位AI的量化觀點，但**僅供教育與參考用途**。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
-    st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
-
-
+    st.markdown("⚠️ **綜合風險與免責聲明 (Risk & Disclaimer)**", unsafe_allow_html=True)
+    st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構。其分析結果**僅供教育與參考用途**，且性能受限於固定參數的**過度擬合風險**和市場的固有不穩定性。")
+    st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
+    st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
