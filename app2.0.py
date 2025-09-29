@@ -256,6 +256,9 @@ def calculate_technical_indicators(df):
     return df
 
 def get_technical_data_df(df):
+    """
+    獲取最新的技術指標數據和AI結論。
+    """
     
     # 確保有足夠的數據計算指標，這裡 200 週期是個合理的閾值
     if df.empty or len(df) < 200: 
@@ -290,6 +293,7 @@ def get_technical_data_df(df):
             ema_50 = last_row['EMA_50']
             ema_200 = last_row['EMA_200']
 
+            # 採用進階的多頭排列判斷 (10 > 50 > 200)
             if ema_10 > ema_50 and ema_50 > ema_200:
                 conclusion = f"**強多頭：MA 多頭排列** (10>50>200)"
                 color = "red"
@@ -517,7 +521,6 @@ def calculate_fundamental_rating(symbol):
         freeCashFlow = info.get('freeCashflow', 0) # 營運現金流健康
         totalCash = info.get('totalCash', 0)
         totalDebt = info.get('totalDebt', 0) # 財務健康: 負債比率 < 50%
-        marketCap = info.get('marketCap', 1) 
         
         # 1. 成長與效率評分 (ROE) (總分 3)
         roe_score = 0
@@ -530,9 +533,9 @@ def calculate_fundamental_rating(symbol):
         
         # 2. 估值評分 (PE) (總分 3)
         pe_score = 0
-        if trailingPE < 15 and trailingPE > 0: # P/E < 15
+        if trailingPE < 15 and trailingPE > 0: # P/E < 15 (格雷厄姆標準)
             pe_score = 3
-        elif trailingPE < 25 and trailingPE > 0: # P/E < 25 (考慮成長股)
+        elif trailingPE < 25 and trailingPE > 0: # P/E < 25 (考慮成長股/行業平均)
             pe_score = 2
         elif trailingPE < 35 and trailingPE > 0: 
             pe_score = 1
@@ -544,9 +547,9 @@ def calculate_fundamental_rating(symbol):
         cash_debt_ratio = (totalCash / totalDebt) if totalDebt and totalDebt != 0 else 100 
         
         # 負債比率 < 50% / 現金流為正 / 現金 > 債務
-        if freeCashFlow > 0 and cash_debt_ratio > 2: # FCF > 0, 現金是債務的 2 倍以上
+        if freeCashFlow > 0 and cash_debt_ratio > 2: # FCF > 0, 現金是債務的 2 倍以上 (超低風險)
             cf_score = 3
-        elif freeCashFlow > 0 and cash_debt_ratio > 1: # FCF > 0, 現金 > 債務
+        elif freeCashFlow > 0 and cash_debt_ratio > 1: # FCF > 0, 現金 > 債務 (低風險)
             cf_score = 2
         elif freeCashFlow > 0: # 至少 FCF 為正
             cf_score = 1
@@ -580,6 +583,7 @@ def calculate_fundamental_rating(symbol):
 def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_symbol="$"):
     """
     更新: 融合了更精確的技術分析標準，特別是 MA 排列、RSI 50 中軸判斷、MACD 動能。
+    並納入了 ATR 風險控制。
     """
     
     # 確保有足夠的數據
@@ -591,11 +595,11 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
     prev_row = df_clean.iloc[-2]
     current_price = last_row['Close']
     atr_value = last_row['ATR']
-    adx_value = last_row['ADX'] # 新增 ADX 趨勢強度
+    adx_value = last_row['ADX'] # 納入 ADX 趨勢強度
     
     expert_opinions = {}
     
-    # 1. 均線交叉與排列專家 (MA Cross & Alignment)
+    # 1. 均線交叉與排列專家 (MA Cross & Alignment) - 趨勢線與MA判斷
     ma_score = 0
     ema_10 = last_row['EMA_10']
     ema_50 = last_row['EMA_50']
@@ -612,7 +616,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
         ma_score = -3.5 # 死亡交叉，強勁賣出信號
         expert_opinions['趨勢分析 (MA 交叉)'] = "**💀 死亡交叉 (DC)**：EMA 10 向下穿越 EMA 50，強勁看跌信號！"
     elif ema_10 > ema_50 and ema_50 > ema_200:
-        ma_score = 2.0 # 保持多頭排列
+        ma_score = 2.0 # 保持多頭排列 (10 > 50 > 200)
         expert_opinions['趨勢分析 (MA 排列)'] = "強勢多頭排列：**10 > 50 > 200**，趨勢結構穩固。"
     elif ema_10 < ema_50 and ema_50 < ema_200:
         ma_score = -2.0 # 保持空頭排列
@@ -624,7 +628,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
         ma_score = -1.0
         expert_opinions['趨勢分析 (MA 排列)'] = "空頭：EMA 10 位於 EMA 50 之下。"
 
-    # 2. 動能專家 (RSI)
+    # 2. 動能專家 (RSI) - 相對強弱判斷
     momentum_score = 0
     rsi = last_row['RSI']
     
@@ -634,14 +638,14 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
     elif rsi < 40:
         momentum_score = 2.0 # 接近超賣
         expert_opinions['動能分析 (RSI 9)'] = "強化：RSI < 40，動能低位，潛在反彈空間大。"
-    elif rsi > 50:
-        momentum_score = 1.0 # 強勢區間
+    elif rsi > 50: # RSI > 50 為多頭
+        momentum_score = 1.0 
         expert_opinions['動能分析 (RSI 9)'] = "多頭：RSI > 50 中軸，維持在強勢區域。"
     else:
-        momentum_score = -1.0 # 弱勢區間
+        momentum_score = -1.0 # RSI < 50 為空頭
         expert_opinions['動能分析 (RSI 9)'] = "空頭：RSI < 50 中軸，維持在弱勢區域。"
 
-    # 3. 趨勢強度專家 (MACD & ADX)
+    # 3. 趨勢強度專家 (MACD & ADX) - 趨勢強度判斷
     strength_score = 0
     macd_diff = last_row['MACD']
     prev_macd_diff = prev_row['MACD']
@@ -657,7 +661,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
         strength_score += 0
         expert_opinions['趨勢強度 (MACD)'] = "中性：MACD 柱狀圖收縮，動能盤整。"
 
-    # ADX 確認 (趨勢強度 > 25)
+    # ADX 確認 (ADX > 25 確認強趨勢)
     if adx_value > 25:
         strength_score *= 1.5 # 趨勢強度大於 25 時，強化信號
         expert_opinions['趨勢強度 (ADX 9)'] = f"**確認強趨勢**：ADX {adx_value:.2f} > 25，信號有效性高。"
@@ -665,7 +669,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
         expert_opinions['趨勢強度 (ADX 9)'] = f"盤整：ADX {adx_value:.2f} < 25，信號有效性降低。"
 
 
-    # 4. K線形態專家 (簡單判斷)
+    # 4. K線形態專家 (簡單判斷) - K線型態判斷
     kline_score = 0
     is_up_bar = last_row['Close'] > last_row['Open']
     is_strong_up = is_up_bar and (last_row['Close'] - last_row['Open']) > atr_value * 0.7 # 使用 0.7 ATR
@@ -702,7 +706,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
     MAX_SCORE = 13.75 
     confidence = min(100, max(0, 50 + (fusion_score / MAX_SCORE) * 50))
     
-    # 風險控制與交易策略 (R:R 達到 2:1)
+    # 風險控制與交易策略 (R:R 達到 2:1) - 風險管理專家的原則
     risk_multiple = 2.0 if is_long_term else 1.5 # 長線用 2.0 ATR 止損
     reward_multiple = 2.0 # 追求 2:1 的回報風險比
     
