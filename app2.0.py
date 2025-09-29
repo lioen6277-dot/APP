@@ -1110,9 +1110,10 @@ def main():
 
     # === 修正部分：未分析時的預設首頁顯示 (已移除內嵌的免責聲明) ===
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
+          # 🔥 修正：將顏色改為 #ff9933 (亮橙色)
           st.markdown(
               """
-              <h1 style='color: #cc6600; font-size: 32px; font-weight: bold;'>🚀 歡迎使用 AI 趨勢分析</h1>
+              <h1 style='color: #ff9933; font-size: 32px; font-weight: bold;'>🚀 歡迎使用 AI 趨勢分析</h1>
               """, 
               unsafe_allow_html=True
           )
