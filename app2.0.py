@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore')
 # ==============================================================================
 
 st.set_page_config(
-    page_title="AI趨勢分析", # <--- 已將主標題修改為 "AI趨勢分析"
+    page_title="AI趨勢分析", 
     page_icon="📈", 
     layout="wide"
 )
@@ -881,8 +881,28 @@ def main():
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
 
+    # === 修正部分：未分析時的預設首頁顯示 ===
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
-          st.info("請在左側選擇或輸入標的，然後點擊 **『執行AI分析』** 開始。")
+          # 使用 HTML 語法來控制顏色 (橙色調：#cc6600)
+          st.markdown(
+              """
+              <style>
+              .orange-header { color: #cc6600; font-size: 32px; font-weight: bold; }
+              </style>
+              <h1 class='orange-header'>🚀 歡迎使用 AI 趨勢分析儀表板</h1>
+              """, 
+              unsafe_allow_html=True
+          )
+          
+          st.info("請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 **『📊 執行AI分析』** 按鈕開始。")
+          
+          st.markdown("---")
+          
+          st.subheader("📝 使用步驟：")
+          st.markdown("1. **選擇資產類別**：在左側欄選擇 `美股`、`台股` 或 `加密貨幣`。")
+          st.markdown("2. **選擇標的**：使用下拉選單快速選擇熱門標的，或直接在輸入框中鍵入代碼或名稱。")
+          st.markdown("3. **選擇週期**：決定分析的長度（例如：`30 分 (短期)`、`1 日 (中長線)`）。")
+          st.markdown("4. **執行分析**：點擊 **『📊 執行AI分析』**，AI將融合基本面與技術面指標提供交易策略。")
 
 
 if __name__ == '__main__':
