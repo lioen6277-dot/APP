@@ -1097,7 +1097,7 @@ def main():
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
 
-    # === 修正部分：未分析時的預設首頁顯示 ===
+    # === 修正部分：未分析時的預設首頁顯示 (已移除內嵌的免責聲明) ===
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
           st.markdown(
               """
@@ -1115,11 +1115,9 @@ def main():
           st.markdown("1. **選擇資產類別**：在左側欄選擇 `美股`、`台股` 或 `加密貨幣`。")
           st.markdown("2. **選擇標的**：使用下拉選單快速選擇熱門標的，或直接在輸入框中鍵入代碼或名稱。")
           st.markdown("3. **選擇週期**：決定分析的長度（例如：`30 分 (短期)`、`1 日 (中長線)`）。")
-          st.markdown(f"4. **執行分析**：點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
+          st.markdown(f"4. **執行分析**：點擊 <span style='color: #cc6600; font-weight: bold;'>『📊 執行AI分析』**</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
           
           st.markdown("---")
-          st.markdown("⚠️ **免責聲明:** 本分析模型包含多位AI的量化觀點，但僅供教育與參考用途。投資涉及風險，所有交易決策應基於您個人的獨立研究和財務狀況，並建議諮詢專業金融顧問。")
-          st.markdown("📊 **數據來源:** Yahoo Finance | **技術指標:** TA 庫 | **APP優化:** 專業程式碼專家")
 
 
 if __name__ == '__main__':
@@ -1135,8 +1133,9 @@ if __name__ == '__main__':
         
     main()
     
-    # 刪除重複的免責聲明，只保留 main() 函數內部未分析時的免責聲明。
-    # 如果 main() 函數執行完畢後沒有分析結果，會顯示內部的免責聲明。
-    # 這裡只保留強化風險揭示，作為頁面最底部的獨立資訊。
+    # 🚨 FIX: 將所有免責聲明與數據來源合併為單一區塊，並放在頁面最底部，避免與 main() 內容重複。
     st.markdown("---")
-    st.markdown("⚠️ **風險揭示強化:** 本分析模型是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構。但其性能仍受限於固定參數的**過度擬合風險** 和市場的固有不穩定性。所有分析結果**僅供參考**。")
+    st.markdown("⚠️ **綜合風險與免責聲明 (Risk & Disclaimer)**", unsafe_allow_html=True)
+    st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構。其分析結果**僅供教育與參考用途**，且性能受限於固定參數的**過度擬合風險**和市場的固有不穩定性。")
+    st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
+    st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
