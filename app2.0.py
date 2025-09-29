@@ -374,6 +374,123 @@ def get_technical_data_df(df):
     technical_df = technical_df.set_index('指標名稱')
     return technical_df
 
+def run_backtest(df, initial_capital=100000, commission_rate=0.001):
+    """
+    執行基於 SMA 20 / EMA 50 交叉的簡單回測。
+    策略: 黃金交叉買入 (做多)，死亡交叉清倉 (賣出)。
+    """
+    
+    # 確保有足夠的數據
+    if df.empty or len(df) < 51:
+        return {"total_return": 0, "win_rate": 0, "max_drawdown": 0, "total_trades": 0, "message": "數據不足 (少於 51 週期) 或計算錯誤。"}
+
+    data = df.copy()
+    
+    # 計算信號：當前週期 MA 20 > MA 50 且前一週期不滿足，即為黃金交叉 (Buy/Long)
+    data['Prev_MA_State'] = (data['SMA_20'].shift(1) > data['EMA_50'].shift(1))
+    data['Current_MA_State'] = (data['SMA_20'] > data['EMA_50'])
+    
+    # Buy Signal (Golden Cross)
+    data['Signal'] = np.where(
+        (data['Current_MA_State'] == True) & (data['Prev_MA_State'] == False), 1, 0
+    )
+    
+    # Sell Signal (Death Cross)
+    data['Signal'] = np.where(
+        (data['Current_MA_State'] == False) & (data['Prev_MA_State'] == True), -1, data['Signal']
+    )
+    
+    # 移除 NaN，確保指標計算完整
+    data = data.dropna()
+    if data.empty:
+        return {"total_return": 0, "win_rate": 0, "max_drawdown": 0, "total_trades": 0, "message": "指標計算後數據不足。"}
+
+    # --- 模擬交易邏輯 ---
+    capital = [initial_capital]
+    position = 0 # 0: 沒有倉位, 1: 做多
+    buy_price = 0
+    trades = []
+    
+    for i in range(1, len(data)):
+        current_close = data['Close'].iloc[i]
+        
+        # 1. 檢查是否發生黃金交叉 (Buy Signal) 且目前無倉位
+        if data['Signal'].iloc[i] == 1 and position == 0:
+            position = 1
+            buy_price = current_close
+            # 扣除手續費 (假設買入/賣出總共 0.2%)
+            initial_capital -= initial_capital * commission_rate 
+            
+        # 2. 檢查是否發生死亡交叉 (Sell Signal) 且目前有倉位 (清倉)
+        elif data['Signal'].iloc[i] == -1 and position == 1:
+            sell_price = current_close
+            profit = (sell_price - buy_price) / buy_price # 單次交易收益率
+            
+            # 記錄交易
+            trades.append({
+                'entry_date': data.index[i],
+                'exit_date': data.index[i],
+                'profit_pct': profit,
+                'is_win': profit > 0
+            })
+            
+            # 更新資金
+            initial_capital *= (1 + profit)
+            # 扣除手續費
+            initial_capital -= initial_capital * commission_rate
+            
+            position = 0
+            
+        # 記錄每日資金變化 (即使沒有交易，也要記錄)
+        current_value = initial_capital
+        if position == 1:
+            # 計算當前倉位的市值，並加回資金
+            current_value = initial_capital * (current_close / buy_price)
+        
+        capital.append(current_value)
+
+    # 3. 處理最後一天仍持有的倉位 (以最後一個收盤價平倉)
+    if position == 1:
+        sell_price = data['Close'].iloc[-1]
+        profit = (sell_price - buy_price) / buy_price
+        
+        trades.append({
+            'entry_date': data.index[-1],
+            'exit_date': data.index[-1],
+            'profit_pct': profit,
+            'is_win': profit > 0
+        })
+        
+        initial_capital *= (1 + profit)
+        initial_capital -= initial_capital * commission_rate
+        # 更新最後一天的資金
+        if capital: 
+             capital[-1] = initial_capital 
+
+    # --- 計算回測結果 ---
+    
+    # 總回報率
+    total_return = ((initial_capital - 100000) / 100000) * 100
+    
+    # 勝率
+    total_trades = len(trades)
+    win_rate = (sum(1 for t in trades if t['is_win']) / total_trades) * 100 if total_trades > 0 else 0
+    
+    # 最大回撤 (Max Drawdown, MDD)
+    capital_series = pd.Series(capital)
+    max_value = capital_series.expanding(min_periods=1).max()
+    drawdown = (capital_series - max_value) / max_value
+    max_drawdown = abs(drawdown.min()) * 100
+    
+    return {
+        "total_return": round(total_return, 2),
+        "win_rate": round(win_rate, 2),
+        "max_drawdown": round(max_drawdown, 2),
+        "total_trades": total_trades,
+        "message": f"回測區間 {data.index[0].strftime('%Y-%m-%d')} 到 {data.index[-1].strftime('%Y-%m-%d')}。",
+        "capital_curve": capital_series
+    }
+
 def calculate_fundamental_rating(symbol):
     try:
         ticker = yf.Ticker(symbol)
@@ -458,22 +575,45 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
     
     expert_opinions = {}
     
-    # 1. 趨勢專家 (均線)
+    # 1. 均線交叉專家 (MA 交叉) - **新增功能：黃金/死亡交叉信號**
+    ma_cross_score = 0
+    prev_20_above_50 = prev_row['SMA_20'] > prev_row['EMA_50']
+    curr_20_above_50 = last_row['SMA_20'] > last_row['EMA_50']
+    
+    # 黃金交叉 (昨日空頭 -> 今日多頭)
+    if not prev_20_above_50 and curr_20_above_50:
+        ma_cross_score = 3.5 # 給予高權重
+        expert_opinions['趨勢分析 (MA 交叉)'] = "**🚀 黃金交叉 (GC)**：SMA 20 向上穿越 EMA 50，強勁看漲信號！"
+    # 死亡交叉 (昨日多頭 -> 今日空頭)
+    elif prev_20_above_50 and not curr_20_above_50:
+        ma_cross_score = -3.5 # 給予高權重
+        expert_opinions['趨勢分析 (MA 交叉)'] = "**💀 死亡交叉 (DC)**：SMA 20 向下穿越 EMA 50，強勁看跌信號！"
+    # 保持多頭排列
+    elif curr_20_above_50:
+        ma_cross_score = 1.0
+        expert_opinions['趨勢分析 (MA 交叉)'] = "多頭排列持續：SMA 20 持續位於 EMA 50 之上。"
+    # 保持空頭排列
+    else:
+        ma_cross_score = -1.0
+        expert_opinions['趨勢分析 (MA 交叉)'] = "空頭排列持續：SMA 20 持續位於 EMA 50 之下。"
+
+
+    # 2. 趨勢專家 (價格 vs 均線) - (原來的趨勢判斷)
     trend_score = 0
     if last_row['Close'] > last_row['SMA_20'] and last_row['SMA_20'] > last_row['EMA_50']:
         trend_score = 3
-        expert_opinions['趨勢分析 (均線)'] = "多頭：短線(SMA)與中長線(EMA)均線呈多頭排列。"
+        expert_opinions['趨勢分析 (價格 vs MA)'] = "多頭：價格站上短線均線，短線位於中線之上。"
     elif last_row['Close'] < last_row['SMA_20'] and last_row['SMA_20'] < last_row['EMA_50']:
         trend_score = -3
-        expert_opinions['趨勢分析 (均線)'] = "空頭：短線與中長線均線呈空頭排列。"
+        expert_opinions['趨勢分析 (價格 vs MA)'] = "空頭：價格位於短線均線之下，短線位於中線之下。"
     elif last_row['Close'] > last_row['SMA_20'] or last_row['Close'] > last_row['EMA_50']:
         trend_score = 1
-        expert_opinions['趨勢分析 (均線)'] = "中性偏多：價格位於部分均線之上。"
+        expert_opinions['趨勢分析 (價格 vs MA)'] = "中性偏多：價格位於部分均線之上。"
     else:
         trend_score = -1
-        expert_opinions['趨勢分析 (均線)'] = "中性偏空：價格位於部分均線之下。"
+        expert_opinions['趨勢分析 (價格 vs MA)'] = "中性偏空：價格位於部分均線之下。"
 
-    # 2. 動能專家 (RSI & Stoch)
+    # 3. 動能專家 (RSI & Stoch)
     momentum_score = 0
     rsi = last_row['RSI']
     stoch_k = last_row['Stoch_K']
@@ -488,7 +628,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
         momentum_score = 0
         expert_opinions['動能分析 (RSI/Stoch)'] = "中性：指標位於中間區域，趨勢發展中。"
 
-    # 3. 波動性專家 (MACD)
+    # 4. 波動性專家 (MACD)
     volatility_score = 0
     macd_diff = last_row['MACD']
     prev_macd_diff = prev_row['MACD']
@@ -503,7 +643,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
         volatility_score = 0
         expert_opinions['波動分析 (MACD)'] = "中性：MACD柱狀圖收縮，動能盤整。"
 
-    # 4. K線形態專家 (簡單判斷)
+    # 5. K線形態專家 (簡單判斷)
     kline_score = 0
     is_up_bar = last_row['Close'] > last_row['Open']
     is_strong_up = is_up_bar and (last_row['Close'] - last_row['Open']) > atr_value * 0.5
@@ -519,10 +659,10 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
         kline_score = 0
         expert_opinions['K線形態分析'] = "中性：K線實體小，觀望。"
 
-    # 融合評分 (總分 12 分 + FA 評分)
+    # 6. 融合評分 (總分 3 + 2 + 2 + 1.5 + 3.5 + 3 = 15.0)
     # 將 FA 評分 (0-9) 正規化到 -3 到 +3 的範圍
     fa_normalized_score = ((fa_rating / 9) * 6) - 3 if fa_rating > 0 else 0
-    fusion_score = trend_score + momentum_score + volatility_score + kline_score + fa_normalized_score
+    fusion_score = trend_score + momentum_score + volatility_score + kline_score + ma_cross_score + fa_normalized_score
     
     # 最終行動
     action = "觀望 (Neutral)"
@@ -537,26 +677,26 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True):
         action = "中性偏賣 (Hold/Sell)"
         
     # 信心指數 (將評分正規化到 0-100)
-    confidence = min(100, max(0, 50 + fusion_score * 5))
+    MAX_SCORE = 15.0 
+    confidence = min(100, max(0, 50 + (fusion_score / MAX_SCORE) * 50))
     
     # 風險控制與交易策略
     risk_multiple = 2.0 if is_long_term else 1.5
     reward_multiple = 2.0
     
     # 定義策略
-    # 這裡的 entry price 邏輯可以調整為 current_price 附近
     entry_buffer = atr_value * 0.2 # 允許 0.2 ATR 的緩衝
     
     if action in ["買進 (Buy)", "中性偏買 (Hold/Buy)"]:
         entry = current_price - entry_buffer
         stop_loss = entry - (atr_value * risk_multiple)
         take_profit = entry + (atr_value * risk_multiple * reward_multiple)
-        strategy_desc = f"基於{action}信號，建議在 **{entry_buffer:,.4f}** 範圍內尋找支撐或等待回調進場。"
+        strategy_desc = f"基於{action}信號，建議在 **{currency_symbol}{entry:.2f} (± {entry_buffer:,.4f})** 範圍內尋找支撐或等待回調進場。"
     elif action in ["賣出 (Sell/Short)", "中性偏賣 (Hold/Sell)"]:
         entry = current_price + entry_buffer
         stop_loss = entry + (atr_value * risk_multiple)
         take_profit = entry - (atr_value * risk_multiple * reward_multiple)
-        strategy_desc = f"基於{action}信號，建議在 **{entry_buffer:,.4f}** 範圍內尋找阻力或等待反彈後進場。"
+        strategy_desc = f"基於{action}信號，建議在 **{currency_symbol}{entry:.2f} (± {entry_buffer:,.4f})** 範圍內尋找阻力或等待反彈後進場。"
     else:
         entry = current_price
         stop_loss = current_price - atr_value
@@ -890,6 +1030,7 @@ def main():
         with col_strat_1:
             st.markdown(f"**建議操作:** <span class='{action_class}' style='font-size: 18px;'>**{analysis['action']}**</span>", unsafe_allow_html=True)
         with col_strat_2:
+            # 注意：這裡的 entry_price 已經包含了緩衝，策略描述裡也已經有緩衝資訊。
             st.markdown(f"**建議進場價:** <span style='color:#cc6600;'>**{currency_symbol}{analysis['entry_price']:.2f}**</span>", unsafe_allow_html=True)
         with col_strat_3:
             st.markdown(f"**🚀 止盈價 (TP):** <span style='color:red;'>**{currency_symbol}{analysis['take_profit']:.2f}**</span>", unsafe_allow_html=True)
@@ -908,9 +1049,9 @@ def main():
             ai_df.loc[len(ai_df)] = ['基本面 FCF/ROE/PE 診斷', fa_result['Message']]
         
         def style_expert_opinion(s):
-            is_positive = s.str.contains('牛市|買進|多頭|強化|利多|增長|頂級|良好|潛在反彈|K線向上|正常波動性', case=False)
-            is_negative = s.str.contains('熊市|賣出|空頭|削弱|利空|下跌|不足|潛在回調|K線向下|極高波動性', case=False)
-            is_neutral = s.str.contains('盤整|警告|中性|觀望|趨勢發展中|不適用|不完整', case=False) 
+            is_positive = s.str.contains('牛市|買進|多頭|強化|利多|增長|頂級|良好|潛在反彈|K線向上|黃金交叉|持續位於', case=False)
+            is_negative = s.str.contains('熊市|賣出|空頭|削弱|利空|下跌|不足|潛在回調|K線向下|死亡交叉|趨勢疲軟|極高波動性', case=False)
+            is_neutral = s.str.contains('盤整|警告|中性|觀望|趨勢發展中|不適用|不完整|正常波動性', case=False) 
             
             colors = np.select(
                 [is_negative, is_positive, is_neutral],
@@ -932,6 +1073,52 @@ def main():
         )
         
         st.caption("ℹ️ **設計師提示:** 判讀結果顏色：**紅色=多頭/強化信號** (類似低風險買入)，**綠色=空頭/削弱信號** (類似高風險賣出)，**橙色=中性/警告**。")
+
+        st.markdown("---")
+        
+        st.subheader("🧪 策略回測報告 (SMA 20/EMA 50 交叉)")
+        
+        # 執行回測
+        backtest_results = run_backtest(df.copy())
+        
+        # 顯示回測結果
+        if backtest_results.get("total_trades", 0) > 0:
+            
+            col_bt_1, col_bt_2, col_bt_3, col_bt_4 = st.columns(4)
+            
+            with col_bt_1: 
+                st.metric("📊 總回報率", f"{backtest_results['total_return']}%", 
+                          delta_color='inverse' if backtest_results['total_return'] < 0 else 'normal',
+                          delta=backtest_results['message'])
+
+            with col_bt_2: 
+                st.metric("📈 勝率", f"{backtest_results['win_rate']}%")
+
+            with col_bt_3: 
+                # MDD 數字越大越不好，所以反向使用 delta_color
+                st.metric("📉 最大回撤 (MDD)", f"{backtest_results['max_drawdown']}%", delta_color='inverse')
+
+            with col_bt_4:
+                st.metric("🤝 交易總次數", f"{backtest_results['total_trades']} 次")
+                
+            # 資金曲線圖
+            if 'capital_curve' in backtest_results:
+                fig_bt = go.Figure()
+                fig_bt.add_trace(go.Scatter(x=df.index.to_list(), y=backtest_results['capital_curve'], name='策略資金曲線', line=dict(color='#cc6600', width=2)))
+                fig_bt.add_hline(y=100000, line_dash="dash", line_color="#1e8449", annotation_text="起始資金 $100,000", annotation_position="bottom right")
+                
+                fig_bt.update_layout(
+                    title='SMA 20/EMA 50 交叉策略資金曲線',
+                    xaxis_title='交易週期',
+                    yaxis_title='賬戶價值 ($)',
+                    margin=dict(l=20, r=20, t=40, b=20),
+                    height=300
+                )
+                st.plotly_chart(fig_bt, use_container_width=True)
+                
+            st.caption("ℹ️ **策略說明:** 此回測使用 **SMA 20/EMA 50** 交叉作為**開倉/清倉**信號 (初始資金 $100,000，單次交易手續費 0.1%)。 **總回報率**越高越好，**最大回撤 (MDD)**越低越好。")
+        else:
+            st.info(f"回測無法執行或無交易信號：{backtest_results.get('message', '數據不足或發生錯誤。')}")
 
         st.markdown("---")
         
