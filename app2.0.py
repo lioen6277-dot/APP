@@ -685,16 +685,28 @@ def main():
     # --- 5. 開始分析 (Button) ---
     st.sidebar.markdown("5. **開始分析**")
     
-    # ✅ 修正 TypeError：使用 .get() 和 or '預設值'，確保 final_symbol_to_analyze 和 selected_period_key 絕不會是 None。
-    safe_symbol = final_symbol_to_analyze if final_symbol_to_analyze else 'DEFAULT_SYMBOL'
-    # 確保 selected_period_key 在任何情況下都有一個字串值
-    safe_period = selected_period_key or 'DEFAULT_PERIOD' 
+    # ✅ 強化修正 TypeError：確保 button key 始終是安全的字串，且隨標的/週期變化。
+    # ----------------------------------------------------------------------
     
-    # 構建安全的動態鍵值
-    button_key = f"analyze_{safe_symbol}_{safe_period}"
+    # 1. 確保 final_symbol_to_analyze 是字串，否則使用 fallback
+    safe_symbol = 'DEFAULT_SYMBOL_FALLBACK'
+    if final_symbol_to_analyze and isinstance(final_symbol_to_analyze, str):
+        safe_symbol = final_symbol_to_analyze
+    
+    # 2. 確保 selected_period_key 是字串，否則使用 fallback
+    safe_period = 'DEFAULT_PERIOD_FALLBACK'
+    if selected_period_key and isinstance(selected_period_key, str):
+        safe_period = selected_period_key
+        
+    # 3. 構建安全的動態鍵值：替換掉 Streamlit 不喜歡的特殊符號 (如空格、括號、點、連字符)
+    # 使用 re.sub 替換所有問題字元
+    cleaned_period = re.sub(r'[\s\(\)]', '_', safe_period).replace('-', '_')
+    cleaned_symbol = re.sub(r'[\s\-\.]', '_', safe_symbol)
+        
+    button_key = f"analyze_btn_{cleaned_symbol}_{cleaned_period}"
 
-    # 使用 use_key 傳入安全鍵值
-    analyze_button_clicked = st.sidebar.button("📊 執行AI分析", type="primary", use_key=button_key) 
+    # 使用動態鍵值，修正 TypeError
+    analyze_button_clicked = st.sidebar.button("📊 執行AI分析", type="primary", key=button_key) 
     
     # === 主要分析邏輯 (Main Analysis Logic) ===
     if analyze_button_clicked or st.session_state.get('analyze_trigger', False):
