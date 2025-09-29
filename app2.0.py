@@ -222,18 +222,29 @@ def get_currency_symbol(symbol):
         return currency_code + ' '
 
 def calculate_technical_indicators(df):
+    """
+    優化後的技術指標計算：採用市場經典且被廣泛驗證的參數設定。
+    """
     
-    df['SMA_20'] = ta.trend.sma_indicator(df['Close'], window=20)
-    df['EMA_50'] = ta.trend.ema_indicator(df['Close'], window=50)
+    # 經典趨勢指標
+    df['SMA_20'] = ta.trend.sma_indicator(df['Close'], window=20) # 短期/中期趨勢
+    df['EMA_50'] = ta.trend.ema_indicator(df['Close'], window=50) # 中期趨勢
     
-    # MACD 需要 12, 26, 9 週期
+    # 經典 MACD 設定 (12, 26, 9)
     macd_instance = ta.trend.MACD(df['Close'], window_fast=12, window_slow=26, window_sign=9)
     df['MACD'] = macd_instance.macd_diff() # MACD 柱狀圖 (MACD Line - Signal Line)
     
+    # 經典 RSI 設定 (14)
     df['RSI'] = ta.momentum.rsi(df['Close'], window=14)
+    
+    # 經典布林通道 (20, 2)
     df['BB_High'] = ta.volatility.bollinger_hband(df['Close'], window=20, window_dev=2)
     df['BB_Low'] = ta.volatility.bollinger_lband(df['Close'], window=20, window_dev=2)
+    
+    # 經典 ATR 設定 (14)
     df['ATR'] = ta.volatility.average_true_range(df['High'], df['Low'], df['Close'], window=14)
+    
+    # 經典 Stochastics 設定 (%K=14, Smooth=3)
     df['Stoch_K'] = ta.momentum.stoch(df['High'], df['Low'], df['Close'], window=14, smooth_window=3)
     
     return df
@@ -255,15 +266,15 @@ def get_technical_data_df(df):
     
     indicators = {}
     
-    indicators['收盤價 vs SMA-20'] = last_row['Close']
-    indicators['收盤價 vs EMA-50'] = last_row['Close']
+    indicators['收盤價 vs SMA-20 (短線)'] = last_row['Close']
+    indicators['收盤價 vs EMA-50 (中線)'] = last_row['Close']
     
     indicators['RSI (14)'] = last_row['RSI']
-    indicators['Stochastics (%K)'] = last_row['Stoch_K']
-    indicators['MACD 柱狀圖 (Signal)'] = last_row['MACD']
+    indicators['Stochastics (%K: 14/3/3)'] = last_row['Stoch_K']
+    indicators['MACD 柱狀圖 (12/26/9)'] = last_row['MACD']
     
-    indicators['ATR (14)'] = last_row['ATR']
-    indicators['布林通道 (BB)'] = last_row['Close']
+    indicators['ATR (14) (波動性)'] = last_row['ATR']
+    indicators['布林通道 (BB: 20/2)'] = last_row['Close']
     
     data = []
     
@@ -271,7 +282,7 @@ def get_technical_data_df(df):
         conclusion = ""
         color = "grey"
         
-        if name == '收盤價 vs SMA-20':
+        if 'SMA-20' in name:
             ma = last_row['SMA_20']
             if value > ma * 1.01:
                 conclusion = f"多頭：價格站上均線 ({ma:,.2f})"
@@ -283,7 +294,7 @@ def get_technical_data_df(df):
                 conclusion = f"中性：盤整或趨勢發展中 ({ma:,.2f})"
                 color = "orange"
         
-        elif name == '收盤價 vs EMA-50':
+        elif 'EMA-50' in name:
             ma = last_row['EMA_50']
             if value > ma * 1.02:
                 conclusion = f"多頭：中長線趨勢強勁 ({ma:,.2f})"
@@ -295,7 +306,7 @@ def get_technical_data_df(df):
                 conclusion = f"中性：中長線盤整 ({ma:,.2f})"
                 color = "orange"
 
-        elif name == 'RSI (14)':
+        elif 'RSI' in name:
             if value > 70:
                 conclusion = "警告：超買區域 (70)，潛在回調"
                 color = "green" 
@@ -306,7 +317,7 @@ def get_technical_data_df(df):
                 conclusion = "中性：正常波動性"
                 color = "blue"
 
-        elif name == 'Stochastics (%K)':
+        elif 'Stochastics' in name:
             if value > 80:
                 conclusion = "警告：接近超買區域 (80)"
                 color = "green"
@@ -317,7 +328,7 @@ def get_technical_data_df(df):
                 conclusion = "中性：正常波動性"
                 color = "blue"
 
-        elif name == 'MACD 柱狀圖 (Signal)':
+        elif 'MACD' in name:
             if value > 0 and value > prev_row['MACD']:
                 conclusion = "強化：多頭動能增強 (紅柱放大)"
                 color = "red"
@@ -328,7 +339,7 @@ def get_technical_data_df(df):
                 conclusion = "中性：動能盤整 (柱狀收縮)"
                 color = "orange"
         
-        elif name == 'ATR (14)':
+        elif 'ATR' in name:
             # 使用過去 30 期的平均 ATR 作為比較基準
             avg_atr = df_clean['ATR'].iloc[-30:].mean() if len(df_clean) >= 30 else df_clean['ATR'].mean()
             
@@ -342,7 +353,7 @@ def get_technical_data_df(df):
                 conclusion = "中性：正常波動性"
                 color = "blue"
 
-        elif name == '布林通道 (BB)':
+        elif '布林通道' in name:
             high = last_row['BB_High']
             low = last_row['BB_Low']
             range_pct = (high - low) / last_row['Close'] * 100
@@ -640,39 +651,40 @@ def update_search_input():
 
 def main():
     
-    # === 新增自定義 CSS 來實現透明按鍵和淡橙色文字 ===
+    # === 新增自定義 CSS 來實現透明按鍵和淡橙色文字 (玻璃按鍵效果) ===
     st.markdown("""
         <style>
-        /* 目標：側邊欄的主要分析按鈕 */
-        /* 由於 Streamlit 按鈕會隨著版本變動類名，這裡使用包含 data-testid 的屬性選擇器 */
+        /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 */
         [data-testid="stSidebar"] .stButton button {
-            /* 顏色設置：淡橙色 (例如：#ffab40) */
-            color: #ffab40 !important; 
-            /* 背景設置：透明 */
-            background-color: transparent !important;
-            /* 邊框設置：淡橙色邊框 */
-            border-color: #ffab40 !important;
+            color: #ffab40 !important; /* 淡橙色文字 */
+            background-color: rgba(255, 255, 255, 0.1) !important; /* 透明背景 */
+            border-color: #ffab40 !important; /* 淡橙色邊框 */
             border-width: 1px !important;
+            /* 輕微的陰影和圓角，模擬玻璃感 */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
+            border-radius: 8px;
+            transition: all 0.3s ease;
         }
 
-        /* 懸停 (Hover) 效果 */
+        /* 2. 懸停 (Hover) 效果 - 增強淡橙色 */
         [data-testid="stSidebar"] .stButton button:hover {
             color: #cc6600 !important; /* 懸停時文字顏色變深橙 */
-            background-color: rgba(255, 171, 64, 0.1) !important; /* 懸停時輕微背景色 */
+            background-color: rgba(255, 171, 64, 0.15) !important; /* 懸停時輕微背景色 */
             border-color: #cc6600 !important;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* 輕微提升陰影 */
         }
         
-        /* 點擊 (Active/Focus) 效果 */
+        /* 3. 點擊 (Active/Focus) 效果 */
         [data-testid="stSidebar"] .stButton button:active,
         [data-testid="stSidebar"] .stButton button:focus {
             color: #ff9933 !important;
-            background-color: rgba(255, 171, 64, 0.2) !important;
+            background-color: rgba(255, 171, 64, 0.25) !important;
             border-color: #ff9933 !important;
-            box-shadow: none !important;
+            box-shadow: none !important; /* 點擊時移除陰影 */
         }
         
-        /* 修正主標題顏色 */
-        h1 { color: #cc6600; }
+        /* 4. 修正主標題顏色 (未分析時的首頁標題) */
+        h1 { color: #cc6600; } 
         </style>
         """, unsafe_allow_html=True)
 
@@ -761,7 +773,7 @@ def main():
     # --- 5. 開始分析 (Button) ---
     st.sidebar.markdown("5. **開始分析**")
     
-    # 🚀 注意：移除了 type='primary' 屬性，讓自訂 CSS 生效
+    # 使用自定義 CSS 實現的玻璃按鍵
     analyze_button_clicked = st.sidebar.button("📊 執行AI分析", key="main_analyze_button") 
 
     # === 主要分析邏輯 (Main Analysis Logic) ===
@@ -785,6 +797,7 @@ def main():
                     company_info = get_company_info(final_symbol_to_analyze) 
                     currency_symbol = get_currency_symbol(final_symbol_to_analyze) 
                     
+                    # 🚀 使用優化後的指標參數
                     df = calculate_technical_indicators(df) 
                     fa_result = calculate_fundamental_rating(final_symbol_to_analyze)
                     analysis = generate_expert_fusion_signal(
@@ -959,9 +972,9 @@ def main():
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
 
-    # === 修正部分：未分析時的預設首頁顯示 (已修正為內聯 CSS) ===
+    # === 修正部分：未分析時的預設首頁顯示 (將標題改為淡橙色 #cc6600) ===
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
-          # 使用 HTML 語法來控制顏色 (橙色調：#cc6600)，改用內聯 CSS 確保生效
+          # 使用 HTML 語法來控制顏色 (橙色調：#cc6600)
           st.markdown(
               """
               <h1 style='color: #cc6600; font-size: 32px; font-weight: bold;'>🚀 歡迎使用 AI 趨勢分析</h1>
