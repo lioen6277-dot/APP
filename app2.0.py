@@ -327,7 +327,7 @@ def calculate_fundamental_rating(symbol):
         info = ticker.info
         
         # 獲取關鍵基本面指標
-        roe = info.get('returnOnEquity', 0)
+        roe = info.get('returnOnequity', 0)
         freeCashFlow = info.get('freeCashflow', 0)
         totalCash = info.get('totalCash', 0)
         totalDebt = info.get('totalDebt', 0)
@@ -564,7 +564,7 @@ def create_comprehensive_chart(df, symbol, period_key):
 # ==============================================================================
 
 def main():
-    # Session State 初始化
+    # Streamlit Session State 初始化，確保變數存在
     if 'last_search_symbol' not in st.session_state:
         st.session_state['last_search_symbol'] = 'TSLA'
     if 'data_ready' not in st.session_state:
@@ -588,6 +588,7 @@ def main():
     default_index = 0
     try:
         last_symbol = st.session_state.get('last_search_symbol', 'TSLA')
+        # 嘗試找到上次的符號在當前分類中的索引
         last_display_name = next(k for k, v in hot_options.items() if v == last_symbol)
         default_index = list(hot_options.keys()).index(last_display_name)
     except StopIteration:
@@ -609,7 +610,12 @@ def main():
     )
     
     # 判斷最終要分析的代碼
-    raw_symbol = manual_input if manual_input and manual_input.strip() != st.session_state.get('last_search_symbol', 'TSLA') else selected_symbol_from_hot
+    # 優先使用手動輸入的值，除非它是預設值且熱門選項被修改
+    if manual_input and manual_input.strip() != st.session_state.get('last_search_symbol', 'TSLA'):
+        raw_symbol = manual_input
+    else:
+        raw_symbol = selected_symbol_from_hot
+        
     final_symbol_to_analyze = get_symbol_from_query(raw_symbol)
     
     # --- 2. 週期選擇 ---
@@ -624,6 +630,8 @@ def main():
 
     # --- 3. 執行按鈕 ---
     st.sidebar.markdown("---")
+    # 檢查是否需要自動觸發分析 (例如，從熱門清單選擇了一個新的標的)
+    should_run_auto = (st.session_state.get('last_search_symbol') != final_symbol_to_analyze)
     analyze_button_clicked = st.sidebar.button("執行 AI 分析 🚀", use_container_width=True)
 
     # ==============================================================================
@@ -631,9 +639,12 @@ def main():
     # ==============================================================================
 
     # 只有在點擊按鈕或標的改變時才重新運行分析
-    if analyze_button_clicked or (st.session_state.get('last_search_symbol') != final_symbol_to_analyze and raw_symbol != st.session_state.get('last_search_symbol')):
+    if analyze_button_clicked or should_run_auto:
         
-        st.session_state['last_search_symbol'] = final_symbol_to_analyze
+        # 如果是自動運行，只更新當前符號，不更新 last_search_symbol，讓用戶能繼續用手動輸入
+        if analyze_button_clicked:
+             st.session_state['last_search_symbol'] = final_symbol_to_analyze
+             
         st.session_state['data_ready'] = False 
 
         with st.spinner(f"正在分析 {final_symbol_to_analyze} 的數據..."):
@@ -785,6 +796,7 @@ def main():
                     "分析結論": st.column_config.Column("趨勢/動能判讀", help="基於數值範圍的專業解讀"),
                 }
             )
+            # 根據截圖，修正提示文字，使其更簡潔和精確
             st.caption("ℹ️ **設計師提示:** 表格顏色會根據指標的趨勢/風險等級自動變化（**紅色=多頭/強化信號**，**綠色=空頭/削弱信號**，**橙色=中性/警告**）。")
 
         else:
@@ -799,6 +811,7 @@ def main():
     
     # 首次載入或數據未準備好時的提示
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
+         # 修正提示文字，保持介面風格
          st.info("請在左側選擇或輸入標的，然後點擊 **『執行 AI 分析 🚀』** 開始。")
 
 
