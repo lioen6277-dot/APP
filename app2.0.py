@@ -685,12 +685,15 @@ def main():
     # --- 5. 開始分析 (Button) ---
     st.sidebar.markdown("5. **開始分析**")
     
-    # 修正 TypeError：使用動態鍵值 use_key 時，其中一個變數 (final_symbol_to_analyze) 在初始狀態可能為 None。
-    # 創建一個安全的動態鍵值，確保變數非空。
+    # ✅ 修正 TypeError：使用 .get() 和 or '預設值'，確保 final_symbol_to_analyze 和 selected_period_key 絕不會是 None。
     safe_symbol = final_symbol_to_analyze if final_symbol_to_analyze else 'DEFAULT_SYMBOL'
-    button_key = f"analyze_{safe_symbol}_{selected_period_key}"
+    # 確保 selected_period_key 在任何情況下都有一個字串值
+    safe_period = selected_period_key or 'DEFAULT_PERIOD' 
+    
+    # 構建安全的動態鍵值
+    button_key = f"analyze_{safe_symbol}_{safe_period}"
 
-    # 使用 use_key 傳入安全鍵值，確保當 Symbol/Period 變更時，按鈕狀態能正確重置。
+    # 使用 use_key 傳入安全鍵值
     analyze_button_clicked = st.sidebar.button("📊 執行AI分析", type="primary", use_key=button_key) 
     
     # === 主要分析邏輯 (Main Analysis Logic) ===
