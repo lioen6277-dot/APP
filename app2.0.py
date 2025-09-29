@@ -302,9 +302,9 @@ def get_technical_data_df(df):
             range_pct = (high - low) / last_row['Close'] * 100
             
             if value > high:
-                conclusion, color = f"警告：價格位於上軌外側 (>{high:,.2f})", "red"
+                conclusion, color = f"警告：價格位於上軌外側 (>{high:,.2f})", "green"
             elif value < low:
-                conclusion, color = f"強化：價格位於下軌外側 (<{low:,.2f})", "green"
+                conclusion, color = f"強化：價格位於下軌外側 (<{low:,.2f})", "red"
             else:
                 conclusion, color = f"中性：在上下軌間 ({range_pct:.2f}% 寬度)", "blue"
         
@@ -713,6 +713,23 @@ def update_search_input():
 # 3. Streamlit 主邏輯 (Main Function)
 # ==============================================================================
 
+# 核心修正：修復 Streamlit/Pandas Styler 的 TypeError
+def style_factor_score(s):
+    # 由於 axis=1，s 是單一列的 Series。確保我們拿到的是數值。
+    score = s['得分 (-5.0 ~ +5.0)']
+    
+    # 進行更清晰的條件判斷 (捨棄 np.select 以避免潛在的維度問題)
+    if score.iloc[0] > 1.0:
+        color = 'color: #cc6600; font-weight: bold;' # 統一多頭信號顏色
+    elif score.iloc[0] < -1.0:
+        color = 'color: #1e8449; font-weight: bold;'
+    else:
+        color = 'color: #0077b6;' # 中性改為藍色
+        
+    # Styler.apply(axis=1) 搭配 subset=1 個欄位時，需返回包含 1 個 style string 的列表
+    return [color]
+
+
 def main():
     
     # === 新增自定義 CSS 來實現玻璃按鍵效果和橙色文字 ===
@@ -959,24 +976,17 @@ def main():
         factor_df.loc[factor_df['因子名稱'] == 'MA_趨勢', '說明'] = "短期/長期均線交叉與排列 (包含 EMA 200 濾鏡影響)"
         factor_df.loc[factor_df['因子名稱'] == '動能_RSI', '說明'] = "相對強弱指數 (RSI 9) 動能"
         factor_df.loc[factor_df['因子名稱'] == '動能_MACD', '說明'] = "異同移動平均線 (MACD) 柱狀圖變化"
-        factor_df.loc[factor_df['因子名稱'] == '強度_ADX', '說明'] = "趨勢強度指標 (ADX 9) 判斷盤整或強趨勢"
+        factor_df.loc[factor_名稱'] == '強度_ADX', '說明'] = "趨勢強度指標 (ADX 9) 判斷盤整或強趨勢"
         factor_df.loc[factor_df['因子名稱'] == '形態_K線', '說明'] = "當前 K 線實體強度"
         
-        def style_factor_score(s):
-            is_positive = s['得分 (-5.0 ~ +5.0)'] > 1.0
-            is_negative = s['得分 (-5.0 ~ +5.0)'] < -1.0
-            is_neutral = (s['得分 (-5.0 ~ +5.0)'] >= -1.0) & (s['得分 (-5.0 ~ +5.0)'] <= 1.0)
-            
-            # 修正：統一多頭信號顏色
-            colors = np.select(
-                [is_positive, is_negative, is_neutral],
-                ['color: #cc6600; font-weight: bold;', 'color: #1e8449; font-weight: bold;', 'color: #0077b6;'],
-                default='color: #888888;'
-            )
-            return [f'{c}' for c in colors]
+        # 修正後的 style_factor_score 函數已經定義在 main 函數之前
+        def style_factor_score_wrapper(x):
+             # 僅傳遞必要的 Series 給 style_factor_score
+             return style_factor_score(x)
 
+        # 應用修正後的 Styler
         styled_factor_df = factor_df[['因子名稱', '得分 (-5.0 ~ +5.0)', '說明']].style.apply(
-            lambda x: style_factor_score(x), axis=1, subset=['得分 (-5.0 ~ +5.0)']
+            style_factor_score_wrapper, axis=1, subset=['得分 (-5.0 ~ +5.0)']
         ).format({'得分 (-5.0 ~ +5.0)': '{:.2f}'})
 
         st.dataframe(
@@ -1133,7 +1143,7 @@ if __name__ == '__main__':
         
     main()
     
-    # 🚨 FIX: 將所有免責聲明與數據來源合併為單一區塊，並放在頁面最底部，避免與 main() 內容重複。
+    # 🚨 綜合免責聲明區塊
     st.markdown("---")
     st.markdown("⚠️ **綜合風險與免責聲明 (Risk & Disclaimer)**", unsafe_allow_html=True)
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構。其分析結果**僅供教育與參考用途**，且性能受限於固定參數的**過度擬合風險**和市場的固有不穩定性。")
