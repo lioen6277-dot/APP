@@ -889,7 +889,7 @@ def main():
               <style>
               .orange-header { color: #cc6600; font-size: 32px; font-weight: bold; }
               </style>
-              <h1 class='orange-header'>🚀 歡迎使用 AI 趨勢分析儀表板</h1>
+              <h1 class='orange-header'>🚀 歡迎使用 AI 趨勢分析</h1>
               """, 
               unsafe_allow_html=True
           )
