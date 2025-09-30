@@ -729,7 +729,7 @@ def main():
     selected_category_key = st.sidebar.selectbox(
         "選擇資產類別", 
         category_keys, 
-        index=category_keys.index("美股 (US) - 個股/ETF/指數"), # 預設選中美股
+        index=category_keys.index("台股 (TW) - 個股/ETF/指數"), # 預設選中台股
         label_visibility="collapsed"
     )
 
@@ -738,7 +738,7 @@ def main():
     
     current_category_options_display = list(CATEGORY_HOT_OPTIONS.get(selected_category_key, {}).keys())
     
-    current_symbol_code = st.session_state.get('last_search_symbol', "AAPL - 蘋果")
+    current_symbol_code = st.session_state.get('last_search_symbol', "2330.TW - 台積電")
     default_symbol_index = 0
     
     try:
@@ -762,7 +762,7 @@ def main():
     # --- 3. 輸入股票代碼或中文名稱 (Text Input) ---
     st.sidebar.markdown("3. 🔍 **輸入股票代碼或中文名稱**")
 
-    text_input_current_value = st.session_state.get('sidebar_search_input', st.session_state.get('last_search_symbol', "AAPL"))
+    text_input_current_value = st.session_state.get('sidebar_search_input', st.session_state.get('last_search_symbol', "2330.TW"))
 
     selected_query = st.sidebar.text_input(
         "🔍 輸入股票代碼或中文名稱", 
@@ -1091,6 +1091,7 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構。其分析結果**僅供教育與參考用途**，且性能受限於固定參數的**過度擬合風險**和市場的固有不穩定性。")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
+
 
 
 
