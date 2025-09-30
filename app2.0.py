@@ -24,10 +24,10 @@ st.set_page_config(
 
 # 週期映射：(YFinance Period, YFinance Interval)
 PERIOD_MAP = { 
-    "30 分 (短期)": ("60d", "30m"), 
-    "4 小時 (波段)": ("1y", "60m"), 
-    "1 日 (中長線)": ("5y", "1d"), 
-    "1 週 (長期)": ("max", "1wk")
+    "30 分": ("60d", "30m"), 
+    "4 小時": ("1y", "60m"), 
+    "1 日": ("5y", "1d"), 
+    "1 週": ("max", "1wk")
 }
 
 # 🚀 您的【所有資產清單】(FULL_SYMBOLS_MAP) - 維持不變，用於快速選擇和代碼解析
@@ -729,7 +729,7 @@ def main():
     selected_category_key = st.sidebar.selectbox(
         "選擇資產類別", 
         category_keys, 
-        index=category_keys.index("台股 (TW) - 個股/ETF/指數"), # 預設選中台股
+        index=category_keys.index("美股 (US) - 個股/ETF/指數"), # 預設選中美股
         label_visibility="collapsed"
     )
 
@@ -738,7 +738,7 @@ def main():
     
     current_category_options_display = list(CATEGORY_HOT_OPTIONS.get(selected_category_key, {}).keys())
     
-    current_symbol_code = st.session_state.get('last_search_symbol', "2330.TW")
+    current_symbol_code = st.session_state.get('last_search_symbol', "AAPL - 蘋果")
     default_symbol_index = 0
     
     try:
@@ -789,13 +789,13 @@ def main():
     st.sidebar.markdown("4. **選擇週期**")
 
     period_keys = list(PERIOD_MAP.keys())
-    selected_period_key = st.sidebar.selectbox("分析時間週期", period_keys, index=period_keys.index("1 日 (中長線)")) 
+    selected_period_key = st.sidebar.selectbox("分析時間週期", period_keys, index=period_keys.index("1 日")) 
 
     selected_period_value = PERIOD_MAP[selected_period_key]
 
     yf_period, yf_interval = selected_period_value
 
-    is_long_term = selected_period_key in ["1 日 (中長線)", "1 週 (長期)"]
+    is_long_term = selected_period_key in ["30 分","30 分","4 小時","1 日", "1 週"]
 
     st.sidebar.markdown("---")
 
@@ -1065,7 +1065,7 @@ def main():
           st.subheader("📝 使用步驟：")
           st.markdown("1. **選擇資產類別**：在左側欄選擇 `美股`、`台股` 或 `加密貨幣`。")
           st.markdown("2. **選擇標的**：使用下拉選單快速選擇熱門標的，或直接在輸入框中鍵入代碼或名稱。")
-          st.markdown("3. **選擇週期**：決定分析的長度（例如：`30 分 (短期)`、`1 日 (中長線)`）。")
+          st.markdown("3. **選擇週期**：決定分析的長度（例如：`30 分`、`4 小時`、`1 日`、`1 周`）。")
           # 🔥 修正：將顏色改為 #ff9933
           st.markdown(f"4. **執行分析**：點擊 <span style='color: #ff9933; font-weight: bold;'>『📊 執行AI分析』**</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
           
@@ -1091,5 +1091,6 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)** 和 **ATR 動態風險控制** 的專業架構。其分析結果**僅供教育與參考用途**，且性能受限於固定參數的**過度擬合風險**和市場的固有不穩定性。")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
+
 
 
