@@ -30,7 +30,7 @@ PERIOD_MAP = {
     "1 週": ("max", "1wk")
 }
 
-# 🚀 您的【所有資產清單】(FULL_SYMBOLS_MAP) - 維持不變，用於快速選擇和代碼解析
+# 🚀 您的【所有資產清單】
 FULL_SYMBOLS_MAP = {
     # ----------------------------------------------------
     # A. 美股核心 (US Stocks) - 個股
@@ -109,7 +109,7 @@ FULL_SYMBOLS_MAP = {
 
 }
 
-# 建立第二層選擇器映射 (無須修改)
+# 建立第二層選擇器映射
 CATEGORY_MAP = {
     "美股 (US) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if not (c.endswith(".TW") or c.endswith("-USD") or c.startswith("^TWII"))],
     "台股 (TW) - 個股/ETF/指數": [c for c in FULL_SYMBOLS_MAP.keys() if c.endswith(".TW") or c.startswith("^TWII")],
@@ -556,7 +556,7 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
 
     # ADX 確認 (ADX > 25 確認強趨勢)
     if adx_value > 25:
-        strength_score *= 1.5 # 趨勢強度大於 25 時，強化信號 (您的進階要求)
+        strength_score *= 1.5 # 趨勢強度大於 25 時，強化信號
         expert_opinions['趨勢強度 (ADX 9)'] = f"**確認強趨勢**：ADX {adx_value:.2f} > 25，信號有效性高。"
     else:
         expert_opinions['趨勢強度 (ADX 9)'] = f"盤整：ADX {adx_value:.2f} < 25，信號有效性降低。"
@@ -628,7 +628,6 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
         'atr': atr_value
     }
 
-# create_comprehensive_chart (維持不變 - 綜合圖表繪製)
 def create_comprehensive_chart(df, symbol, period_key):
     df_clean = df.dropna().copy()
     if df_clean.empty: return go.Figure().update_layout(title="數據不足，無法繪製圖表")
@@ -674,7 +673,6 @@ def create_comprehensive_chart(df, symbol, period_key):
 
     return fig
 
-# Streamlit 側邊欄函數 (維持不變)
 def update_search_input():
     if st.session_state.symbol_select_box and st.session_state.symbol_select_box != "請選擇標的...":
         code = st.session_state.symbol_select_box.split(' - ')[0]
@@ -690,7 +688,6 @@ def update_search_input():
 
 def main():
     
-    # === 新增自定義 CSS 來實現透明按鍵和淡橙色文字 (玻璃按鍵效果) ===
     st.markdown("""
         <style>
         /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (淡橙色：#ffab40) */
@@ -1017,11 +1014,10 @@ def main():
         if not technical_df.empty:
             def style_indicator(s):
                 df_color = technical_df['顏色']
-                # 修正：將紅色替換為橙色（多頭/強化信號）
                 color_map = {'red': 'color: #cc6600; font-weight: bold;', 
                              'green': 'color: #1e8449; font-weight: bold;', 
-                             'orange': 'color: #0077b6;', # 中性改為藍色
-                             'blue': 'color: #888888;', # 中性改為灰色
+                             'orange': 'color: #0077b6;', 
+                             'blue': 'color: #888888;',
                              'grey': 'color: #888888;'}
                 
                 return [color_map.get(df_color.loc[index], '') for index in s.index]
@@ -1049,9 +1045,7 @@ def main():
         
         st.plotly_chart(chart, use_container_width=True, key=f"plotly_chart_{final_symbol_to_analyze}_{selected_period_key}")
 
-    # === 修正部分：未分析時的預設首頁顯示 (已移除內嵌的免責聲明) ===
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
-          # 🔥 修正：將顏色改為 #ff9933 (亮橙色)
           st.markdown(
               """
               <h1 style='color: #ff9933; font-size: 32px; font-weight: bold;'>🚀 歡迎使用 AI 趨勢分析</h1>
@@ -1059,7 +1053,6 @@ def main():
               unsafe_allow_html=True
           )
           
-          # 🔥 修正：將顏色改為 #ff9933
           st.markdown(f"請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 <span style='color: #ff9933; font-weight: bold;'>『📊 執行AI分析』</span> 按鈕開始。", unsafe_allow_html=True)
           
           st.markdown("---")
@@ -1068,14 +1061,12 @@ def main():
           st.markdown("1. **選擇資產類別**：在左側欄選擇 `美股`、`台股` 或 `加密貨幣`。")
           st.markdown("2. **選擇標的**：使用下拉選單快速選擇熱門標的，或直接在輸入框中鍵入代碼或名稱。")
           st.markdown("3. **選擇週期**：決定分析的長度（例如：`30 分`、`4 小時`、`1 日`、`1 周`）。")
-          # 🔥 修正：將顏色改為 #ff9933
           st.markdown(f"4. **執行分析**：點擊 <span style='color: #ff9933; font-weight: bold;'>『📊 執行AI分析』**</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
           
           st.markdown("---")
 
 
 if __name__ == '__main__':
-    # Streamlit Session State 初始化，確保變數存在
     if 'last_search_symbol' not in st.session_state:
         st.session_state['last_search_symbol'] = "2330.TW"
     if 'data_ready' not in st.session_state:
@@ -1093,6 +1084,7 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)**的專業架構。其分析結果**僅供參考用途**")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
+
 
 
 
