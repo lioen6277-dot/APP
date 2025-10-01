@@ -888,17 +888,19 @@ def main():
         st.subheader("💡 核心行動與量化評分")
         
         st.markdown(
-            """
-            <style>
-            [data-testid="stMetricValue"] { font-size: 20px; }
-            [data-testid="stMetricLabel"] { font-size: 13px; }
-            [data-testid="stMetricDelta"] { font-size: 12px; }
-            .action-buy { color: #cc0000; font-weight: bold; }
-            .action-sell { color: #1e8449; font-weight: bold; }
-            .action-neutral { color: #cc6600; font-weight: bold; }
-            </style>
-            """, unsafe_allow_html=True
-        )
+    """
+    <style>
+    [data-testid="stMetricValue"] { font-size: 20px; }
+    [data-testid="stMetricLabel"] { font-size: 13px; }
+    [data-testid="stMetricDelta"] { font-size: 12px; }
+    .action-buy { color: #cc0000; font-weight: bold; }
+    .action-sell { color: #1e8449; font-weight: bold; }
+    .action-neutral { color: #cc6600; font-weight: bold; }
+    .action-hold-buy { color: #FFC899; font-weight: bold; }
+    .action-hold-sell { color: #D9F5D9; font-weight: bold; }
+    </style>
+    """, unsafe_allow_html=True
+)
         
         col_core_1, col_core_2, col_core_3, col_core_4 = st.columns(4)
         
@@ -1093,6 +1095,7 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)**的專業架構。其分析結果**僅供參考用途**")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
+
 
 
 
