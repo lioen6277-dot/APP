@@ -144,7 +144,6 @@ def get_symbol_from_query(query: str) -> str:
         return tw_code
     return query
 
-# ⭐️ 優化 1: 強化數據獲取的穩定性，排除重複時間戳和當前未完成的 K 線
 @st.cache_data(ttl=3600, show_spinner="正在從 Yahoo Finance 獲取數據...")
 def get_stock_data(symbol, period, interval):
     try:
@@ -701,11 +700,11 @@ def main():
     
     st.markdown("""
         <style>
-        /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (淡橙色：#ffab40) */
+        /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (淡橙色：#F77E2D) */
         [data-testid="stSidebar"] .stButton button {
             color: #ffab40 !important; /* 淡橙色文字 */
             background-color: rgba(255, 255, 255, 0.1) !important; /* 透明背景 */
-            border-color: #ffab40 !important; /* 淡橙色邊框 */
+            border-color: #F77E2D !important; /* 淡橙色邊框 */
             border-width: 1px !important;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
             border-radius: 8px;
@@ -1038,7 +1037,7 @@ def main():
                 df_color = technical_df['顏色']
                 color_map = {'red': 'color: #cc6600; font-weight: bold;', 
                              'green': 'color: #1e8449; font-weight: bold;', 
-                             'orange': 'color: #0077b6;', 
+                             'orange': 'color: #F77E2D;', 
                              'blue': 'color: #888888;',
                              'grey': 'color: #888888;'}
                 
@@ -1106,3 +1105,4 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)**的專業架構。其分析結果**僅供參考用途**")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
+
