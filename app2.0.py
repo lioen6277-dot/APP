@@ -907,10 +907,20 @@ def main():
         with col_core_1: 
             st.metric("💰 當前價格", f"{currency_symbol}{current_price:,.2f}", f"{change:+.2f} ({change_pct:+.2f}%)", delta_color=price_delta_color)
         
-        with col_core_2: 
-            st.markdown("**🎯 最終行動建議**")
-            action_class = "action-buy" if analysis['action'] == "買進 (Buy)" else ("action-sell" if analysis['action'] == "賣出 (Sell/Short)" else "action-neutral")
-            st.markdown(f"<p class='{action_class}' style='font-size: 20px;'>{analysis['action']}</p>", unsafe_allow_html=True)
+        with col_core_2:
+    st.markdown("**🎯 最終行動建議**")
+    if analysis['action'] == "買進 (Buy)":
+        action_class = "action-buy"
+    elif analysis['action'] == "中性偏買 (Hold/Buy)":
+        action_class = "action-hold-buy" 
+    elif analysis['action'] == "賣出 (Sell/Short)":
+        action_class = "action-sell"
+    elif analysis['action'] == "中性偏賣 (Hold/Sell)":
+        action_class = "action-hold-sell" 
+    else:
+        action_class = "action-neutral"
+        
+    st.markdown(f"<p class='{action_class}' style='font-size: 20px;'>{analysis['action']}</p>", unsafe_allow_html=True)
         
         with col_core_3: 
             st.metric("🔥 總量化評分", f"{analysis['score']}", help="FA/TA 融合策略總分 (正數看漲)")
@@ -1095,6 +1105,7 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)**的專業架構。其分析結果**僅供參考用途**")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
+
 
 
 
