@@ -733,8 +733,7 @@ def main():
 # --- 0. 側邊欄選擇器 (Category Selectbox) ---
     category_keys = list(CATEGORY_MAP.keys())
 
-    st.sidebar.markdown("1. 選擇資產類別")
-    selected_category_key = st.sidebar.selectbox(
+    st.sidebar.selected_category_key = st.sidebar.selectbox(
         "選擇資產類別", 
         category_keys, 
         index=category_keys.index("台股 (TW) - 個股/ETF/指數"), # 預設選中台股
@@ -1103,6 +1102,7 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)**的專業架構。其分析結果**僅供參考用途**")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
+
 
 
 
