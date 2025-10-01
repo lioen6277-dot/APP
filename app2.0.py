@@ -771,8 +771,8 @@ def display_main_app():
 
     hot_options = CATEGORY_HOT_OPTIONS.get(st.session_state['category_selection'], {})
     
-    selected_option_key = st.sidebar.selectbox(
-        "2. 快速選擇熱門標的",
+    selected_option_key = st.selectbox(
+        "快速選擇熱門標的",
         list(hot_options.keys()),
         key='hot_select',
         index=list(hot_options.keys()).index(next((k for k, v in hot_options.items() if v == st.session_state['sidebar_search_input']), list(hot_options.keys())[0]))
@@ -780,7 +780,7 @@ def display_main_app():
     st.session_state['sidebar_search_input'] = hot_options.get(selected_option_key, st.session_state['sidebar_search_input'])
     
     st.sidebar.text_input(
-        "3. 或手動輸入代碼/名稱",
+        "2. 或手動輸入代碼/名稱",
         value=st.session_state['sidebar_search_input'], 
         key='search_query_input'
     )
@@ -790,7 +790,7 @@ def display_main_app():
     st.sidebar.info(f"最終代碼: **{symbol_to_query}**")
     
     selected_period_key = st.sidebar.selectbox(
-        "4. 選擇分析週期",
+        "3. 選擇分析週期",
         list(PERIOD_MAP.keys()),
         index=2 # 預設為 1 日
     )
@@ -961,3 +961,4 @@ def display_main_app():
 
 if __name__ == '__main__':
     display_main_app()
+
