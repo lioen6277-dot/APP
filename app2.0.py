@@ -721,9 +721,9 @@ def main():
         /* 3. 點擊 (Active/Focus) 效果 */
         [data-testid="stSidebar"] .stButton button:active,
         [data-testid="stSidebar"] .stButton button:focus {
-            color: #ff9933 !important;
+            color: #F77E2D !important;
             background-color: rgba(255, 171, 64, 0.25) !important;
-            border-color: #ff9933 !important;
+            border-color: #F77E2D !important;
             box-shadow: none !important; 
         }
         /* 4. 修正主標題顏色 */
@@ -1070,12 +1070,12 @@ def main():
     elif not st.session_state.get('data_ready', False) and not analyze_button_clicked:
           st.markdown(
               """
-              <h1 style='color: #ff9933; font-size: 32px; font-weight: bold;'>🚀 歡迎使用 AI 趨勢分析</h1>
+              <h1 style='color: #F77E2D; font-size: 32px; font-weight: bold;'>🚀 歡迎使用 AI 趨勢分析</h1>
               """, 
               unsafe_allow_html=True
           )
           
-          st.markdown(f"請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 <span style='color: #ff9933; font-weight: bold;'>『📊 執行AI分析』</span> 按鈕開始。", unsafe_allow_html=True)
+          st.markdown(f"請在左側選擇或輸入您想分析的標的（例如：**2330.TW**、**NVDA**、**BTC-USD**），然後點擊 <span style='color: #F77E2D; font-weight: bold;'>『📊 執行AI分析』</span> 按鈕開始。", unsafe_allow_html=True)
           
           st.markdown("---")
           
@@ -1083,7 +1083,7 @@ def main():
           st.markdown("1. **選擇資產類別**：在左側欄選擇 `美股`、`台股` 或 `加密貨幣`。")
           st.markdown("2. **選擇標的**：使用下拉選單快速選擇熱門標的，或直接在輸入框中鍵入代碼或名稱。")
           st.markdown("3. **選擇週期**：決定分析的長度（例如：`30 分`、`4 小時`、`1 日`、`1 周`）。")
-          st.markdown(f"4. **執行分析**：點擊 <span style='color: #ff9933; font-weight: bold;'>『📊 執行AI分析』**</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
+          st.markdown(f"4. **執行分析**：點擊 <span style='color: #F77E2D; font-weight: bold;'>『📊 執行AI分析』**</span>，AI將融合基本面與技術面指標提供交易策略。", unsafe_allow_html=True)
           
           st.markdown("---")
 
@@ -1106,13 +1106,3 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)**的專業架構。其分析結果**僅供參考用途**")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
-
-
-
-
-
-
-
-
-
-
