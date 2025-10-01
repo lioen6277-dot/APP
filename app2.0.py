@@ -106,7 +106,6 @@ FULL_SYMBOLS_MAP = {
     "DOT-USD": {"name": "Polkadot", "keywords": ["Polkadot", "DOT", "DOT-USDT"]},
     "LINK-USD": {"name": "Chainlink", "keywords": ["Chainlink", "LINK", "LINK-USDT"]},
     "PEPE-USD": {"name": "佩佩幣", "keywords": ["佩佩幣", "PEPE", "PEPE-USDT"]},
-
 }
 
 # 建立第二層選擇器映射
@@ -130,9 +129,6 @@ for category, codes in CATEGORY_MAP.items():
 # 2. 輔助函式定義
 # ==============================================================================
 
-# get_symbol_from_query, get_stock_data, get_company_info, get_currency_symbol 
-# (維持不變 - 數據獲取與基礎資訊)
-
 def get_symbol_from_query(query: str) -> str:
     """ 🎯 進化後的代碼解析函數：同時檢查 FULL_SYMBOLS_MAP """
     query = query.strip()
@@ -148,16 +144,27 @@ def get_symbol_from_query(query: str) -> str:
         return tw_code
     return query
 
+# ⭐️ 優化 1: 強化數據獲取的穩定性，排除重複時間戳和當前未完成的 K 線
 @st.cache_data(ttl=3600, show_spinner="正在從 Yahoo Finance 獲取數據...")
 def get_stock_data(symbol, period, interval):
     try:
         ticker = yf.Ticker(symbol)
         df = ticker.history(period=period, interval=interval)
+        
         if df.empty: return pd.DataFrame()
+        
+        # 統一列名格式
         df.columns = [col.capitalize() for col in df.columns] 
         df.index.name = 'Date'
         df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
-        return df.iloc[:-1]
+        
+        # 確保數據時間戳是唯一的 (防止高頻數據重複)
+        df = df[~df.index.duplicated(keep='first')]
+        # 刪除最後一行（通常是未完成的當前 K 線）
+        df = df.iloc[:-1] 
+        
+        if df.empty: return pd.DataFrame() # 再次檢查是否為空
+        return df
     except Exception as e:
         return pd.DataFrame()
 
@@ -287,7 +294,7 @@ def get_technical_data_df(df):
                 conclusion, color = "中性：動能盤整 (柱狀收縮)", "orange"
         
         elif 'ADX' in name:
-             # ADX > 25 確認強趨勢
+              # ADX > 25 確認強趨勢
             if value >= 40:
                 conclusion, color = "強趨勢：極強勢趨勢 (多或空)", "red"
             elif value >= 25:
@@ -376,7 +383,7 @@ def run_backtest(df, initial_capital=100000, commission_rate=0.001):
         current_value = initial_capital
         if position == 1:
             current_value = initial_capital * (current_close / buy_price)
-        
+            
         capital.append(current_value)
 
     # 3. Handle open position
@@ -475,6 +482,7 @@ def calculate_fundamental_rating(symbol):
         return { "Combined_Rating": 1.0, "Message": f"基本面數據獲取失敗或不適用 (代碼可能錯誤或數據缺失)。", "Details": None }
 
 # generate_expert_fusion_signal (確認已納入 ATR R:R 風險管理和多指標融合)
+# ⭐️ 優化 2: 修正策略建議中的價格顯示格式，使其對低價/加密貨幣更精確
 def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_symbol="$"):
     """
     融合了精確的技術分析標準 (MA 排列、RSI 50 中軸、MACD 動能、ADX 濾鏡) 
@@ -599,16 +607,19 @@ def generate_expert_fusion_signal(df, fa_rating, is_long_term=True, currency_sym
     
     entry_buffer = atr_value * 0.3 # 允許 0.3 ATR 的緩衝
     
+    # ⭐️ 優化價格顯示精度: 如果價格低於 100 則使用 4 位小數，否則使用 2 位
+    price_format = ".4f" if current_price < 100 and not currency_symbol == 'NT$' else ".2f"
+    
     if action in ["買進 (Buy)", "中性偏買 (Hold/Buy)"]:
         entry = current_price - entry_buffer
         stop_loss = entry - (atr_value * risk_multiple)
         take_profit = entry + (atr_value * risk_multiple * reward_multiple)
-        strategy_desc = f"基於{action}信號，建議在 **{currency_symbol}{entry:.2f} (± {entry_buffer:,.4f})** 範圍內尋找支撐或等待回調進場。"
+        strategy_desc = f"基於{action}信號，建議在 **{currency_symbol}{entry:{price_format}} (± {entry_buffer:,.4f})** 範圍內尋找支撐或等待回調進場。"
     elif action in ["賣出 (Sell/Short)", "中性偏賣 (Hold/Sell)"]:
         entry = current_price + entry_buffer
         stop_loss = entry + (atr_value * risk_multiple)
         take_profit = entry - (atr_value * risk_multiple * reward_multiple)
-        strategy_desc = f"基於{action}信號，建議在 **{currency_symbol}{entry:.2f} (± {entry_buffer:,.4f})** 範圍內尋找阻力或等待反彈後進場。"
+        strategy_desc = f"基於{action}信號，建議在 **{currency_symbol}{entry:{price_format}} (± {entry_buffer:,.4f})** 範圍內尋找阻力或等待反彈後進場。"
     else:
         entry = current_price
         stop_loss = current_price - atr_value
@@ -1082,6 +1093,7 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)**的專業架構。其分析結果**僅供參考用途**")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
+
 
 
 
