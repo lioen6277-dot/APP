@@ -698,38 +698,38 @@ def update_search_input():
 
 def main():
     
-st.markdown("""
-    <style>
-    /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (鮭魚色：#FA8072) */
-    [data-testid="stSidebar"] .stButton button {
-        color: #FA8072 !important; /* 按鈕文字顏色：鮭魚色 (與邊框一致) */
-        background-color: rgba(255, 255, 255, 0.1) !important; /* 透明背景 */
-        border-color: #FA8072 !important; /* 按鈕邊框顏色：鮭魚色 */
-        border-width: 1px !important;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
-        border-radius: 8px;
-        transition: all 0.3s ease;
-    }
-    /* 2. 懸停 (Hover) 效果 */
-    [data-testid="stSidebar"] .stButton button:hover {
-        color: #E9967A !important; /* 懸停時的文字顏色 */ 
-        background-color: rgba(250, 128, 114, 0.15) !important; /* 懸停時的淺鮭魚色背景 */
-        border-color: #E9967A !important;
-        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); 
-    }
-    /* 3. 點擊 (Active/Focus) 效果 */
-    [data-testid="stSidebar"] .stButton button:active,
-    [data-testid="stSidebar"] .stButton button:focus {
-        color: #E9967A !important;
-        background-color: rgba(250, 128, 114, 0.25) !important;
-        border-color: #E9967A !important;
-        box-shadow: none !important; 
-        transform: scale(0.98); /* ⭐️ 新增：點擊時縮小 2%，模擬按下回饋感 */
-    }
-    /* 4. 修正主標題顏色 */
-    h1 { color: #cc6600; } 
-    </style>
-    """, unsafe_allow_html=True)
+    st.markdown("""
+        <style>
+        /* 1. 側邊欄的主要分析按鈕 - 核心玻璃化設置 (鮭魚色：#FA8072) */
+        [data-testid="stSidebar"] .stButton button {
+            color: #FA8072 !important; /* 按鈕文字顏色：鮭魚色 (與邊框一致) */
+            background-color: rgba(255, 255, 255, 0.1) !important; /* 透明背景 */
+            border-color: #FA8072 !important; /* 按鈕邊框顏色：鮭魚色 */
+            border-width: 1px !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08); 
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        /* 2. 懸停 (Hover) 效果 */
+        [data-testid="stSidebar"] .stButton button:hover {
+            color: #E9967A !important; /* 懸停時的文字顏色 */ 
+            background-color: rgba(250, 128, 114, 0.15) !important; /* 懸停時的淺鮭魚色背景 */
+            border-color: #E9967A !important;
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); 
+        }
+        /* 3. 點擊 (Active/Focus) 效果 */
+        [data-testid="stSidebar"] .stButton button:active,
+        [data-testid="stSidebar"] .stButton button:focus {
+            color: #E9967A !important;
+            background-color: rgba(250, 128, 114, 0.25) !important;
+            border-color: #E9967A !important;
+            box-shadow: none !important; 
+            transform: scale(0.98); /* ⭐️ 新增：點擊時縮小 2%，模擬按下回饋感 */
+        }
+        /* 4. 修正主標題顏色 */
+        h1 { color: #cc6600; } 
+        </style>
+        """, unsafe_allow_html=True)
 
 # --- 0. 側邊欄選擇器 (Category Selectbox) ---
     category_keys = list(CATEGORY_MAP.keys())
@@ -1105,6 +1105,7 @@ if __name__ == '__main__':
     st.markdown("本AI趨勢分析模型，是基於**量化集成學習 (Ensemble)**的專業架構。其分析結果**僅供參考用途**")
     st.markdown("投資涉及風險，所有交易決策應基於您個人的**獨立研究和財務狀況**，並強烈建議諮詢**專業金融顧問**。", unsafe_allow_html=True)
     st.markdown("📊 **數據來源:** Yahoo Finance | 🛠️ **技術指標:** TA 庫 | 💻 **APP優化:** 專業程式碼專家")
+
 
 
 
